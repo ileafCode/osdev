@@ -65,6 +65,10 @@ void parse(char *str)
         else
             printf("[%o9ERROR%oF]: No file found named %s\n", args[0]);
     }
+    else if (strcmp((char *)command, "ts"))
+    {
+        GlobalScheduler->printTasks();
+    }
     else if (strcmp((char *)command, "help"))
     {
         printf("=== Help Menu ===\n");
@@ -73,6 +77,7 @@ void parse(char *str)
         printf("ls - Lists the files and directories in the current directory\n");
         printf("cd <dirpath> - Changes the directory\n");
         printf("run <filepath> - Runs an ELF file\n");
+        printf("ts - Prints all tasks and their names, states and PID\n");
         printf("help - Prints this menu\n");
     }
     else if (strcmp((char *)command, (char *)0));
@@ -134,14 +139,6 @@ extern "C" void _start(BootInfo *bootInfo)
     }
 
     GlobalScheduler = new Scheduler();
-    GlobalScheduler->schedule();
-    GlobalScheduler->schedule();
-    GlobalScheduler->schedule();
-    GlobalScheduler->schedule();
-    GlobalScheduler->schedule();
-    GlobalScheduler->schedule();
-    GlobalScheduler->schedule();
-
     asm("sti");
 
     // ASCII art

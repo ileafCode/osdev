@@ -5,24 +5,46 @@
 #include "../../memory/heap.h"
 
 Scheduler *GlobalScheduler;
-task mainTask;
+//task mainTask;
 
-void idle()
+extern "C" void switchTask(registers *, registers *);
+
+void idle1()
 {
-    while (1)
-        printf("Idle");
+    while (1);
 }
 
 Scheduler::Scheduler()
 {
-    asm volatile("movq %%cr3, %%rax; movq %%rax, %0;" : "=m"(mainTask.regs.cr3)::"%rax");
-    asm volatile("pushfq; movq (%%rsp), %%rax; movq %%rax, %0; popfq;" : "=m"(mainTask.regs.eflags)::"%rax");
+    for (int i = 0; i < 16; i++)
+        this->tasks[0].name[i] = "Kernel"[i];
 
-    this->makeProc("Idle", idle);
+    asm volatile("movq %%cr3, %%rax; movq %%rax, %0;" : "=m"(this->tasks[0].regs.cr3)::"%rax");
+    asm volatile("pushfq; movq (%%rsp), %%rax; movq %%rax, %0; popfq;" : "=m"(this->tasks[0].regs.eflags)::"%rax");
+
+    this->makeProc("Idle", idle1);
 }
 Scheduler::~Scheduler()
 {
 }
+
+void Scheduler::printTasks()
+{
+    printf("[Name] : [State] : [PID] : %d/%d tasks are running\n", this->pids, MAX_PROCESS);
+    for (int i = 0; i < this->pids; i++)
+    {
+        task curTask = this->tasks[i];
+        char state[10];
+        if (curTask.state == RUNNING)
+            for (int i = 0; i < 10; i++)
+                state[i] = "Running"[i];
+        else if (curTask.state == QUEUED)
+            for (int i = 0; i < 10; i++)
+                state[i] = "Queued"[i];
+        printf("[%s] : [%s] : [%d]\n", curTask.name, state, curTask.pid);
+    }
+}
+
 void Scheduler::schedule()
 {
     // Return if there are no processes
@@ -35,7 +57,10 @@ void Scheduler::schedule()
         return;          // Return, because we didn't need to switch.
     }
 
+    // Reset the quantum
     this->quantum = MAX_QUANTUM;
+
+    this->prevPID = this->curPID;
     this->curPID++;
 
     if (this->curPID >= this->pids)
@@ -43,13 +68,14 @@ void Scheduler::schedule()
         this->curPID = 0;
     }
 
+    this->tasks[this->prevPID].state = QUEUED;
+    this->tasks[this->curPID].state = RUNNING;
+
+    //printf("Switch from PID %d to PID %d\n", this->prevPID, this->curPID);
+    //this->prevPID = this->curPID;
+
     // Context switch
-    if ((this->ticks % 2) == 0)
-    {
-        // Switch to main task
-    }
-    
-    // Switch to other task
+    switchTask(&this->tasks[this->prevPID].regs, &this->tasks[this->curPID].regs);
 }
 
 void Scheduler::makeProc(char name[16], void (*entry)())
@@ -60,20 +86,24 @@ void Scheduler::makeProc(char name[16], void (*entry)())
     this->tasks[this->pids].regs.rdx = 0;
     this->tasks[this->pids].regs.rsi = 0;
     this->tasks[this->pids].regs.rdi = 0;
-    this->tasks[this->pids].regs.eflags = mainTask.regs.eflags;
+    this->tasks[this->pids].regs.eflags = this->tasks[0].regs.eflags;
     this->tasks[this->pids].regs.rip = (uint64_t) entry;
-    this->tasks[this->pids].regs.cr3 = mainTask.regs.cr3;
+    this->tasks[this->pids].regs.cr3 = this->tasks[0].regs.cr3;
     this->tasks[this->pids].regs.rsp = (uint64_t) malloc(0x1000) + 0x1000;
 
     this->tasks[this->pids].pid = this->pids;
     this->tasks[this->pids].state = QUEUED;
+
     for (int i = 0; i < 16; i++)
         this->tasks[this->pids].name[i] = name[i];
+
     this->pids++;
 }
 
 void Scheduler::delProc(uint16_t pid)
 {
+    free((void*)(this->tasks[pid].regs.rsp - 0x1000));
+    this->pids--;
 }
 
 uint16_t Scheduler::getCurPID()
