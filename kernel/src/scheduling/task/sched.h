@@ -26,7 +26,7 @@ struct task
     uint16_t pid;   // Process ID
     char name[16];  // Process name
     int state;      // Can be RUNNING, QUEUED or KILL
-    bool locked;    // Is locked
+    //bool locked;    // Is locked
 } __attribute__((packed));
 
 // Scheduler class
@@ -42,6 +42,10 @@ public:
     void makeProc(char name[16], void *entry);
     // Deletes a process
     void delProc(uint16_t pid);
+    // Gets the current process ID
+    uint16_t getCurPID();
+    // Deletes itself
+    void delSelf();
 
 private:
     // Decides how long a task can be run (ex. 5q = 50ms, 1q = 10ms, etc.)
@@ -50,6 +54,8 @@ private:
     int pids = 0;
     // Current process
     uint16_t curPID = 0;
+    // Ticks since boot
+    uint64_t ticks = 0;
     // All the tasks
     task tasks[MAX_PROCESS];
 };
