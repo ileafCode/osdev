@@ -55,7 +55,9 @@ void parse(char *str)
 
             if (prg != NULL)
             {
-                ((void (*)(void))prg->entryPoint)();
+                GlobalScheduler->makeProc("Process", (void*)prg->entryPoint);
+
+                //((void (*)(void))prg->entryPoint)();
                 free(prg);
             }
             else

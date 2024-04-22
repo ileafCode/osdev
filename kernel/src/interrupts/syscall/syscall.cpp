@@ -6,24 +6,30 @@
 #include "../../userinput/keyboard.h"
 #include "../../BasicRenderer.h"
 #include "../../fs/MeduzaFS.h"
+#include "../../scheduling/task/sched.h"
 
 __attribute__((interrupt)) void Syscall0(interrupt_frame *frame)
 {
+    asm("cli");
     uint64_t rbx;
     asm volatile("movq %%rbx, %0;" : "=r"(rbx));
     char chr = (char)rbx;
     printf("%c", chr);
+    asm("sti");
 }
 
 __attribute__((interrupt)) void Syscall1(interrupt_frame *frame)
 {
+    asm("cli");
     asm volatile("movq %0, %%rbx;" : : "r"(MousePosition.X));
     asm volatile("movq %0, %%rcx;" : : "r"(MousePosition.Y));
     asm volatile("movq %0, %%rdx;" : : "r"(mouseButtonData));
+    asm("sti");
 }
 
 __attribute__((interrupt)) void Syscall2(interrupt_frame *frame)
 {
+    asm("cli");
     uint64_t type; // Type (malloc or free)
     asm volatile("movq %%rbx, %0;" : "=r"(type));
 
@@ -50,16 +56,20 @@ __attribute__((interrupt)) void Syscall2(interrupt_frame *frame)
         while(1);
         break;
     }
+    asm("sti");
 }
 
 __attribute__((interrupt)) void Syscall3(interrupt_frame *frame)
 {
+    asm("cli");
     // Get framebuffer data struct
     asm volatile("movq %0, %%rbx" : : "r"(GlobalRenderer->TargetFramebuffer));
+    asm("sti");
 }
 
 __attribute__((interrupt)) void Syscall4(interrupt_frame *frame)
 {
+    asm("cli");
     uint64_t type; // Type
     asm volatile("movq %%rbx, %0;" : "=r"(type));
 
@@ -80,4 +90,14 @@ __attribute__((interrupt)) void Syscall4(interrupt_frame *frame)
         break;
     }
     }
+    asm("sti");
+}
+
+__attribute__((interrupt)) void Syscall5(interrupt_frame *frame)
+{
+    asm("cli");
+    //uint64_t register rbx asm("rbx");
+
+    GlobalScheduler->delProc(GlobalScheduler->getCurPID());
+    asm("sti");
 }

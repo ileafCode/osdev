@@ -70,6 +70,7 @@ void PrepareInterrupts()
     SetIDTGate((void *)Syscall2, 0x82, IDT_TA_InterruptGate, 0x08);
     SetIDTGate((void *)Syscall3, 0x83, IDT_TA_InterruptGate, 0x08);
     SetIDTGate((void *)Syscall4, 0x84, IDT_TA_InterruptGate, 0x08);
+    SetIDTGate((void *)Syscall5, 0x85, IDT_TA_InterruptGate, 0x08);
 
     asm("lidt %0" : : "m"(idtr));
 

@@ -25,10 +25,10 @@ section .text
 
 [GLOBAL switchTask]
 switchTask:
-    cmp qword [rdi + 64], 0x10000
-    jg continue
-    cmp qword [rsi + 64], 0x10000
-    jg continue
+    ;cmp qword [rdi + 64], 0x10000
+    ;jg continue
+    ;cmp qword [rsi + 64], 0x10000
+    ;jg continue
 
     pop r14 ; Pop into r14. Now r14 has the address of RIP before calling switchTask.
 

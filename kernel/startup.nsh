@@ -1,5 +1,5 @@
 @echo -off
-mode 80 25
+mode 100 30
 
 cls
 if exist .\efi\boot\main.efi then
