@@ -17,6 +17,8 @@ Scheduler::Scheduler()
 {
     asm volatile("movq %%cr3, %%rax; movq %%rax, %0;" : "=m"(mainTask.regs.cr3)::"%rax");
     asm volatile("pushfq; movq (%%rsp), %%rax; movq %%rax, %0; popfq;" : "=m"(mainTask.regs.eflags)::"%rax");
+
+    this->makeProc("Idle", idle);
 }
 Scheduler::~Scheduler()
 {
@@ -50,7 +52,7 @@ void Scheduler::schedule()
     // Switch to other task
 }
 
-void Scheduler::makeProc(char name[16], void *entry)
+void Scheduler::makeProc(char name[16], void (*entry)())
 {
     this->tasks[this->pids].regs.rax = 0;
     this->tasks[this->pids].regs.rbx = 0;

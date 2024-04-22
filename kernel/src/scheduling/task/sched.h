@@ -39,7 +39,7 @@ public:
     // Called every PIT (Programmable Interval Timer) interrupt
     void schedule();
     // Makes a process
-    void makeProc(char name[16], void *entry);
+    void makeProc(char name[16], void (*entry)());
     // Deletes a process
     void delProc(uint16_t pid);
     // Gets the current process ID
