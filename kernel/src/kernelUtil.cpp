@@ -87,7 +87,7 @@ void PrepareACPI(BootInfo *bootInfo)
     ACPI::MCFGHeader *mcfg = (ACPI::MCFGHeader *)ACPI::FindTable(xsdt, (char *)"MCFG");
     printf("[%o6ACPI%oF]: Enumerating through PCI...\n");
     PCI::EnumeratePCI(mcfg);
-    //apicInit((uint8_t*)bootInfo->rsdp->XSDTAddress);
+    // apicInit((uint8_t*)bootInfo->rsdp->XSDTAddress);
 }
 extern AHCI::AHCIDriver *g_ahciDriver;
 
@@ -123,7 +123,7 @@ KernelInfo InitializeKernel(BootInfo *bootInfo)
     outb(PIC1_DATA, 0b11111000);
     outb(PIC2_DATA, 0b11101111);
 
-    //asm("sti");
+    // asm("sti");
 
     PrepareACPI(bootInfo);
 

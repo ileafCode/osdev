@@ -2,7 +2,6 @@
 
 namespace ACPI
 {
-
     void *FindTable(SDTHeader *sdtHeader, char *signature)
     {
         int entries = (sdtHeader->Length - sizeof(ACPI::SDTHeader)) / 8;

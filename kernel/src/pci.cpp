@@ -3,7 +3,7 @@
 #include "ahci/ahci.h"
 #include "memory/heap.h"
 
-extern AHCI::AHCIDriver* g_ahciDriver;
+extern AHCI::AHCIDriver *g_ahciDriver;
 
 namespace PCI
 {

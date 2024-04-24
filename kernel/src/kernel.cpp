@@ -55,7 +55,7 @@ void parse(char *str)
 
             if (prg != NULL)
             {
-                GlobalScheduler->makeProc("Process", (void*)prg->entryPoint);
+                GlobalScheduler->makeProc("Process", (void *)prg->entryPoint);
 
                 //((void (*)(void))prg->entryPoint)();
                 free(prg);
@@ -82,7 +82,8 @@ void parse(char *str)
         printf("ts - Prints all tasks and their names, states and PID\n");
         printf("help - Prints this menu\n");
     }
-    else if (strcmp((char *)command, (char *)0));
+    else if (strcmp((char *)command, (char *)0))
+        ;
     else
     {
         printf("[%o9ERROR%oF]: No command named \"%s\"\n", command);
@@ -110,8 +111,8 @@ extern "C" void _start(BootInfo *bootInfo)
     uint32_t largestStandardFunc;
     char vendor[13];
     cpuid(0, &largestStandardFunc, (uint32_t *)(vendor + 0),
-        (uint32_t *)(vendor + 8),
-        (uint32_t *)(vendor + 4));
+          (uint32_t *)(vendor + 8),
+          (uint32_t *)(vendor + 4));
     vendor[12] = '\0';
 
     cpuid(0x80000000, &largestExtendedFunc, &ebx, &ecx, &edx);
@@ -120,17 +121,17 @@ extern "C" void _start(BootInfo *bootInfo)
     {
         char name[48];
         cpuid(0x80000002, (uint32_t *)(name + 0),
-            (uint32_t *)(name + 4),
-            (uint32_t *)(name + 8),
-            (uint32_t *)(name + 12));
+              (uint32_t *)(name + 4),
+              (uint32_t *)(name + 8),
+              (uint32_t *)(name + 12));
         cpuid(0x80000003, (uint32_t *)(name + 16),
-            (uint32_t *)(name + 20),
-            (uint32_t *)(name + 24),
-            (uint32_t *)(name + 28));
+              (uint32_t *)(name + 20),
+              (uint32_t *)(name + 24),
+              (uint32_t *)(name + 28));
         cpuid(0x80000004, (uint32_t *)(name + 32),
-            (uint32_t *)(name + 36),
-            (uint32_t *)(name + 40),
-            (uint32_t *)(name + 44));
+              (uint32_t *)(name + 36),
+              (uint32_t *)(name + 40),
+              (uint32_t *)(name + 44));
 
         const char *pname = name;
         while (*pname == ' ')

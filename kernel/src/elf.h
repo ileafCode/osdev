@@ -247,10 +247,10 @@ struct Elf64_Nhdr
 
 struct elf_program
 {
-	char name[9];
-	uint64_t* entryPoint;
+    char name[9];
+    uint64_t *entryPoint;
 };
 
 int elf_get_err();
-int elf_verify(uint8_t* bytes);
-elf_program* elf_load(char name[8], uint8_t* bytes);
+int elf_verify(uint8_t *bytes);
+elf_program *elf_load(char name[8], uint8_t *bytes);
