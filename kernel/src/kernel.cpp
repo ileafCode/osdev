@@ -8,6 +8,7 @@
 #include "cstr.h"
 #include "scheduling/task/sched.h"
 #include "MeduzaWM/wm.h"
+#include "cmos/cmos.h"
 
 void parse(char *str)
 {

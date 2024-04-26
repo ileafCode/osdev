@@ -4,6 +4,8 @@
 #include "../cstr.h"
 #include "../userinput/mouse.h"
 
+// absolutely terrible window manager :0
+
 WindowManager *GlobalWM;
 
 #define WIN_OFFSET 35
@@ -18,12 +20,18 @@ int mouse_oldY = 0;
 
 void WindowManager::update()
 {
-    // sort();
     for (int i = 0; i < windowSize; i++)
     {
         window_t *window = this->windows[i];
         if (window == NULL)
             continue;
+        
+        // Send mouse position data relative to the window
+        if (window->focus)
+        {
+            window->mouseX = MousePosition.X - window->x;
+            window->mouseY = MousePosition.Y - (window->y + WIN_OFFSET);
+        }
 
         if (MousePosition.X >= window->x &&
             MousePosition.X <= window->x + window->width &&
