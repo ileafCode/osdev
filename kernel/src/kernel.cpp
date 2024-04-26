@@ -7,6 +7,7 @@
 #include "fs/vfs.h"
 #include "cstr.h"
 #include "scheduling/task/sched.h"
+#include "MeduzaWM/wm.h"
 
 void parse(char *str)
 {
@@ -104,44 +105,10 @@ extern "C" void _start(BootInfo *bootInfo)
     vfsMount('A');
 
     mfsInit();
-
-    uint32_t largestExtendedFunc;
-    uint32_t eax, ebx, ecx, edx;
-
-    uint32_t largestStandardFunc;
-    char vendor[13];
-    cpuid(0, &largestStandardFunc, (uint32_t *)(vendor + 0),
-          (uint32_t *)(vendor + 8),
-          (uint32_t *)(vendor + 4));
-    vendor[12] = '\0';
-
-    cpuid(0x80000000, &largestExtendedFunc, &ebx, &ecx, &edx);
-
-    if (largestExtendedFunc >= 0x80000004)
-    {
-        char name[48];
-        cpuid(0x80000002, (uint32_t *)(name + 0),
-              (uint32_t *)(name + 4),
-              (uint32_t *)(name + 8),
-              (uint32_t *)(name + 12));
-        cpuid(0x80000003, (uint32_t *)(name + 16),
-              (uint32_t *)(name + 20),
-              (uint32_t *)(name + 24),
-              (uint32_t *)(name + 28));
-        cpuid(0x80000004, (uint32_t *)(name + 32),
-              (uint32_t *)(name + 36),
-              (uint32_t *)(name + 40),
-              (uint32_t *)(name + 44));
-
-        const char *pname = name;
-        while (*pname == ' ')
-            ++pname;
-
-        printf("CPU Vendor: %s\n", vendor);
-        printf("CPU Name: %s\n", pname);
-    }
-
+    
     GlobalScheduler = new Scheduler();
+    GlobalWM = new WindowManager();
+
     asm("sti");
 
     // ASCII art
@@ -155,10 +122,26 @@ $$ |$$$/ $$ |$$$$$$$$/ $$ \\__$$ |$$ \\__$$ | /$$$$/__ /$$$$$$$ |$$ \\__$$ |/  \
 $$ | $/  $$ |$$       |$$    $$ |$$    $$/ /$$      |$$    $$ |$$    $$/ $$    $$/ \n\
 $$/      $$/  $$$$$$$/  $$$$$$$/  $$$$$$/  $$$$$$$$/  $$$$$$$/  $$$$$$/   $$$$$$/ \n");
 
+    window_t *winTest1 = GlobalWM->makeWindow("Test 1", 320, 240);
+    window_t *winTest2 = GlobalWM->makeWindow("Test 2", 320, 240);
+    window_t *winTest3 = GlobalWM->makeWindow("Test 3", 320, 240);
+
+    *(winTest1->pixels) = 0xFFFFFFFF;
+
     while (true)
     {
-        printf("%oEroot%oF@%oDpcname%oF [%oC/%oF] $ ");
-        char *str = KeyboardGetStr();
-        parse(str);
+        GlobalWM->update();
+
+        GlobalRenderer->ClearDB();
+
+        //GlobalWM->drawWindow(winTest1);
+        GlobalWM->draw();
+
+        GlobalRenderer->ClearMouseCursor(MousePointer, MousePositionOld);
+        GlobalRenderer->DrawOverlayMouseCursor(MousePointer, MousePosition, 0xffffffff);
+        //printf("%oEroot%oF@%oDpcname%oF [%oC/%oF] $ ");
+        //char *str = KeyboardGetStr();
+        //parse(str);
+        GlobalRenderer->FlipDB();
     }
 }

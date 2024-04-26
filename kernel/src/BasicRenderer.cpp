@@ -10,6 +10,17 @@ BasicRenderer::BasicRenderer(Framebuffer *targetFramebuffer, PSF1_FONT *psf1_Fon
     cursorPos = {0, 0};
 }
 
+void BasicRenderer::EnableSecondBuffer()
+{
+    this->buffer = (uint32_t *)malloc(this->TargetFramebuffer->PixelsPerScanLine * this->TargetFramebuffer->Height * 4);
+    if (this->buffer == NULL)
+    {
+        Print("Not enough memory for double buffering.");
+        while (1)
+            asm("cli; hlt");
+    }
+}
+
 void BasicRenderer::PutPix(uint32_t x, uint32_t y, uint32_t colour)
 {
     *(uint32_t *)((uint64_t)TargetFramebuffer->BaseAddress + (x * 4) + (y * TargetFramebuffer->PixelsPerScanLine * 4)) = colour;
@@ -18,6 +29,26 @@ void BasicRenderer::PutPix(uint32_t x, uint32_t y, uint32_t colour)
 uint32_t BasicRenderer::GetPix(uint32_t x, uint32_t y)
 {
     return *(uint32_t *)((uint64_t)TargetFramebuffer->BaseAddress + (x * 4) + (y * TargetFramebuffer->PixelsPerScanLine * 4));
+}
+
+void BasicRenderer::PutPixDB(uint32_t x, uint32_t y, uint32_t colour)
+{
+    *(buffer + (y * TargetFramebuffer->Width + x)) = colour;
+}
+
+uint32_t BasicRenderer::GetPixDB(uint32_t x, uint32_t y)
+{
+    return *(buffer + (y * TargetFramebuffer->Width + x));
+}
+
+void BasicRenderer::FlipDB()
+{
+    memcpy((void *)TargetFramebuffer->BaseAddress, (void *)buffer, TargetFramebuffer->Width * TargetFramebuffer->Height * 4);
+}
+
+void BasicRenderer::ClearDB()
+{
+    memset32((void *)buffer, 0, TargetFramebuffer->Width * TargetFramebuffer->Height);
 }
 
 void BasicRenderer::ClearMouseCursor(uint8_t *mouseCursor, Point position)
@@ -42,8 +73,8 @@ void BasicRenderer::ClearMouseCursor(uint8_t *mouseCursor, Point position)
             int bit = y * 16 + x;
             int byte = bit / 8;
             if ((mouseCursor[byte] & (0b10000000 >> (x % 8))))
-                if (GetPix(position.X + x, position.Y + y) == MouseCursorBufferAfter[x + y * 16])
-                    PutPix(position.X + x, position.Y + y, MouseCursorBuffer[x + y * 16]);
+                if (GetPixDB(position.X + x, position.Y + y) == MouseCursorBufferAfter[x + y * 16])
+                    PutPixDB(position.X + x, position.Y + y, MouseCursorBuffer[x + y * 16]);
         }
     }
 }
@@ -68,9 +99,9 @@ void BasicRenderer::DrawOverlayMouseCursor(uint8_t *mouseCursor, Point position,
             int byte = bit / 8;
             if ((mouseCursor[byte] & (0b10000000 >> (x % 8))))
             {
-                MouseCursorBuffer[x + y * 16] = GetPix(position.X + x, position.Y + y);
-                PutPix(position.X + x, position.Y + y, colour);
-                MouseCursorBufferAfter[x + y * 16] = GetPix(position.X + x, position.Y + y);
+                MouseCursorBuffer[x + y * 16] = GetPixDB(position.X + x, position.Y + y);
+                PutPixDB(position.X + x, position.Y + y, colour);
+                MouseCursorBufferAfter[x + y * 16] = GetPixDB(position.X + x, position.Y + y);
             }
         }
     }
@@ -168,33 +199,29 @@ void BasicRenderer::PutChar(uint8_t chr, unsigned int xOff, unsigned int yOff)
         }
         fontPtr++;
     }
+}
 
-    /*uint16_t *fontPtr = (uint16_t *)PSF2_Font->glyph_buffer + (chr * PSF2_Font->psf2_header->height);
-    int bytesPerLine = (PSF2_Font->psf2_header->width + 7) / 8;
-    unsigned int fontHeight = PSF2_Font->psf2_header->height;
-
-    for (unsigned long y = yOff; y < yOff + fontHeight; y++)
+void BasicRenderer::PutCharDB(uint8_t chr, unsigned int xOff, unsigned int yOff)
+{
+    unsigned int *pixPtr = (unsigned int *)buffer;
+    char *fontPtr = (char *)PSF1_Font->glyphBuffer + (chr * PSF1_Font->psf1_Header->charsize);
+    for (unsigned long y = yOff; y < yOff + 16; y++)
     {
-        uint32_t mask = (1 << (PSF2_Font->psf2_header->width - 2));
-        unsigned int currentPixPtr = (y * TargetFramebuffer->PixelsPerScanLine) + xOff;
-
-        for (unsigned long x = xOff; x < xOff + PSF2_Font->psf2_header->width; x++)
+        for (unsigned long x = xOff; x < xOff + 8; x++)
         {
-            if ((*((uint32_t *)fontPtr) & mask))
-                pixPtr[currentPixPtr] = color;
-            else
-                pixPtr[currentPixPtr] = bgColor;
-
-            mask >>= 1;
-            currentPixPtr++;
+            if ((*fontPtr & (0b10000000 >> (x - xOff))) > 0)
+                *(unsigned int *)(pixPtr + x + (y * TargetFramebuffer->PixelsPerScanLine)) = color;
+            //else
+            //    *(unsigned int *)(pixPtr + x + (y * TargetFramebuffer->PixelsPerScanLine)) = bgColor;
         }
-        fontPtr += 1;
-    }*/
+        fontPtr++;
+    }
 }
 
 void BasicRenderer::PutChar(uint8_t chr)
 {
-    if (chr == 0) return;
+    if (chr == 0)
+        return;
     if (chr == '\n')
     {
         this->Next();

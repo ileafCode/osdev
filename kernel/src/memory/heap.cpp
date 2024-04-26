@@ -19,8 +19,6 @@ void InitializeHeap(void *heapAddress, size_t pageCount)
 
     size_t heapLength = pageCount * 0x1000;
 
-    printf("%d\n", heapLength);
-
     heapStart = heapAddress;
     heapEnd = (void *)((size_t)heapStart + heapLength);
     HeapSegHdr *startSeg = (HeapSegHdr *)heapAddress;

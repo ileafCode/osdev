@@ -110,7 +110,9 @@ KernelInfo InitializeKernel(BootInfo *bootInfo)
     printf("[%oCGDT%oF]: GDT initialized\n");
     printf("[%oEMEM%oF]: Paging initialized\n");
 
-    InitializeHeap((void *)0x0000100000000000, 0x10000);
+    printf("[%o3HEAP%oF]: Heap initialized (%d pages allocated)\n",
+        (GlobalAllocator.GetFreeRAM() / 0x1000) / 2);
+    InitializeHeap((void *)0x0000100000000000, (GlobalAllocator.GetFreeRAM() / 0x1000) / 2);
 
     PrepareInterrupts();
 
@@ -123,9 +125,9 @@ KernelInfo InitializeKernel(BootInfo *bootInfo)
     outb(PIC1_DATA, 0b11111000);
     outb(PIC2_DATA, 0b11101111);
 
-    // asm("sti");
-
     PrepareACPI(bootInfo);
+
+    GlobalRenderer->EnableSecondBuffer();
 
     return kernelInfo;
 }

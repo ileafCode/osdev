@@ -170,7 +170,7 @@ int strint(const char *str)
 
 void strcpy(char *str1, char *str2)
 {
-    int n = strlen(str2);
+    int n = strlen(str2) + 1;
     for (int i = 0; i < n; i++)
         str1[i] = str2[i];
 }

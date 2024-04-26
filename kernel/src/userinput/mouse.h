@@ -19,4 +19,6 @@ uint8_t MouseRead();
 void HandlePS2Mouse(uint8_t data);
 void ProcessMousePacket();
 extern Point MousePosition;
+extern Point MouseDelta;
+extern Point MousePositionOld;
 extern uint64_t mouseButtonData;

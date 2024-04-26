@@ -61,6 +61,7 @@ uint8_t MouseCycle = 0;
 uint8_t MousePacket[4];
 bool MousePacketReady = false;
 Point MousePosition;
+Point MouseDelta;
 uint64_t mouseButtonData = 0;
 Point MousePositionOld;
 
@@ -75,7 +76,7 @@ void HandlePS2Mouse(uint8_t data)
 
     uint8_t status = inb(0x64);
 
-    if (status & 0x20 || status & 1)
+    // if (!(status & 0x20))
     {
         switch (MouseCycle)
         {
@@ -93,9 +94,41 @@ void HandlePS2Mouse(uint8_t data)
             MousePacket[2] = data;
             if ((MousePacket[0] & 0x80) || (MousePacket[0] & 0x40))
                 break;
-            //MousePacketReady = true;
+
+            if (MousePacket[0] & PS2Leftbutton)
+                mouseButtonData |= PS2Leftbutton;
+            else
+                mouseButtonData &= ~PS2Leftbutton;
+
+            if (MousePacket[0] & PS2Middlebutton)
+                mouseButtonData |= PS2Middlebutton;
+            else
+                mouseButtonData &= ~PS2Middlebutton;
+
+            if (MousePacket[0] & PS2Rightbutton)
+                mouseButtonData |= PS2Rightbutton;
+            else
+                mouseButtonData &= ~PS2Rightbutton;
+            
+            MouseDelta.X = (char)MousePacket[1];
+            MouseDelta.Y = (char)MousePacket[2];
+
+            MousePosition.X += (char)MousePacket[1];
+            MousePosition.Y -= (char)MousePacket[2];
+
+            if (MousePosition.X < 0)
+                MousePosition.X = 0;
+            if (MousePosition.X > GlobalRenderer->TargetFramebuffer->Width - 1)
+                MousePosition.X = GlobalRenderer->TargetFramebuffer->Width - 1;
+
+            if (MousePosition.Y < 0)
+                MousePosition.Y = 0;
+            if (MousePosition.Y > GlobalRenderer->TargetFramebuffer->Height - 1)
+                MousePosition.Y = GlobalRenderer->TargetFramebuffer->Height - 1;
+
+            MousePositionOld = MousePosition;
+
             MouseCycle = 0;
-            ProcessMousePacket();
             break;
         }
     }
@@ -103,8 +136,8 @@ void HandlePS2Mouse(uint8_t data)
 
 void ProcessMousePacket()
 {
-    //if (!MousePacketReady)
-    //    return;
+    // if (!MousePacketReady)
+    //     return;
 
     bool xNegative, yNegative, xOverflow, yOverflow;
 
@@ -166,8 +199,8 @@ void ProcessMousePacket()
     if (MousePosition.Y > GlobalRenderer->TargetFramebuffer->Height - 1)
         MousePosition.Y = GlobalRenderer->TargetFramebuffer->Height - 1;
 
-    // GlobalRenderer->ClearMouseCursor(MousePointer, MousePositionOld);
-    // GlobalRenderer->DrawOverlayMouseCursor(MousePointer, MousePosition, 0xffffffff);
+    GlobalRenderer->ClearMouseCursor(MousePointer, MousePositionOld);
+    GlobalRenderer->DrawOverlayMouseCursor(MousePointer, MousePosition, 0xffffffff);
 
     if (MousePacket[0] & PS2Leftbutton)
         mouseButtonData = 1;
@@ -201,4 +234,10 @@ void InitPS2Mouse()
 
     MouseWrite(0xF4);
     MouseRead();
+
+    MouseWrite(0xD4);
+    MouseWait();
+
+    MouseWrite(10);
+    MouseWait();
 }
