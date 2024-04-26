@@ -10,7 +10,7 @@ WindowManager *GlobalWM;
 
 WindowManager::WindowManager()
 {
-    //this->windows.reserve(5);
+    // this->windows.reserve(5);
 }
 
 int mouse_oldX = 0;
@@ -18,7 +18,7 @@ int mouse_oldY = 0;
 
 void WindowManager::update()
 {
-    //sort();
+    // sort();
     for (int i = 0; i < windowSize; i++)
     {
         window_t *window = this->windows[i];
@@ -60,6 +60,29 @@ void WindowManager::update()
 
                 if (window->y + window->height > GlobalRenderer->TargetFramebuffer->Height)
                     window->y = GlobalRenderer->TargetFramebuffer->Height - window->height;
+                break;
+            }
+        }
+        else if (MousePosition.X >= window->x &&
+                 MousePosition.X <= window->x + window->width &&
+                 MousePosition.Y >= window->y + WIN_OFFSET &&
+                 MousePosition.Y <= window->y + window->height)
+        {
+            if ((mouseButtonData & PS2Leftbutton))
+            {
+                for (int j = 0; j < this->windowSize; j++)
+                {
+                    window_t *window_ = this->windows[j];
+                    if (window_ == NULL)
+                        continue;
+                    window_->focus = false;
+                }
+
+                window->focus = true;
+                window_t *temp = this->windows[0];
+                this->windows[0] = window;
+                this->windows[i] = temp;
+
                 break;
             }
         }
