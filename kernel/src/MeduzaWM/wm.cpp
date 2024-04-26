@@ -25,7 +25,7 @@ void WindowManager::update()
         window_t *window = this->windows[i];
         if (window == NULL)
             continue;
-        
+
         // Send mouse position data relative to the window
         if (window->focus)
         {
@@ -94,6 +94,19 @@ void WindowManager::update()
                 break;
             }
         }
+        else
+        {
+            if ((mouseButtonData & PS2Leftbutton))
+            {
+                for (int j = 0; j < this->windowSize; j++)
+                {
+                    window_t *window_ = this->windows[j];
+                    if (window_ == NULL)
+                        continue;
+                    window_->focus = false;
+                }
+            }
+        }
     }
 
     mouse_oldX = MousePosition.X;
@@ -119,7 +132,7 @@ window_t *WindowManager::makeWindow(char *name, uint16_t width, uint16_t height)
     window->x = 10 + prevX;
     window->y = 10 + prevY;
     prevX += WIN_OFFSET;
-    prevY += WIN_OFFSET;
+    prevY += WIN_OFFSET + 5;
     window->width = width;
     window->height = height;
     window->focus = true;
@@ -150,14 +163,21 @@ void *WindowManager::drawWindow(window_t *window)
 {
     // Draw the titlebar
     for (int y = 0; y < WIN_OFFSET; y++)
-        for (int x = 0; x < window->width + 8; x++)
+    {
+        int minus = 4;
+        if (y < 4) minus = y;
+        for (int x = 0; x < window->width + (minus * 2); x++)
+        {
             if (window->focus)
-                GlobalRenderer->PutPixDB(window->x + x - 4, window->y + y, RGBtoHex(100 - (y), 100 - (y), 127 - (y)));
+                GlobalRenderer->PutPixDB(window->x + x - minus, window->y + y, RGBtoHex(100 - (y), 100 - (y), 127 - (y)));
             else
             {
                 GlobalRenderer->color = RGBtoHex(200, 200, 240);
-                GlobalRenderer->PutPixDB(window->x + x - 4, window->y + y, RGBtoHex(115 - (y), 115 - (y), 127 - (y)));
+                GlobalRenderer->PutPixDB(window->x + x - minus, window->y + y, RGBtoHex(115 - (y), 115 - (y), 127 - (y)));
             }
+        }
+    }
+        
 
     // Draw the borders
     for (int y = WIN_OFFSET; y < window->height + 4 + WIN_OFFSET; y++)

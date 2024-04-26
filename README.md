@@ -28,3 +28,8 @@ That is all! If you get an "Access denied" error, run this in a terminal:
 ```bash
 chmod +x ./run.sh
 ```
+
+## Other
+### Pictures
+<img src="images/multitasking.png" title="Multitasking officialy working">
+<img src="images/windowtst.png" title="Basic window manager and renderer">
