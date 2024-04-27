@@ -9,7 +9,7 @@ struct window_t
 {
     // Window info
     char name[32];
-    uint16_t x, y, width, height;
+    int16_t x, y, width, height;
     uint32_t *pixels;
     bool focus;
     int id;
@@ -17,6 +17,7 @@ struct window_t
     // Input info
     int mouseX;
     int mouseY;
+    uint8_t sc;
 };
 
 class WindowManager

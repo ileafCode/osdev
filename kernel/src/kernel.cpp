@@ -132,17 +132,6 @@ $$/      $$/  $$$$$$$/  $$$$$$$/  $$$$$$/  $$$$$$$$/  $$$$$$$/  $$$$$$/   $$$$$$
     while (true)
     {
         GlobalWM->update();
-
-        GlobalRenderer->ClearDB();
-
-        //GlobalWM->drawWindow(winTest1);
         GlobalWM->draw();
-
-        GlobalRenderer->ClearMouseCursor(MousePointer, MousePositionOld);
-        GlobalRenderer->DrawOverlayMouseCursor(MousePointer, MousePosition, 0xffffffff);
-        //printf("%oEroot%oF@%oDpcname%oF [%oC/%oF] $ ");
-        //char *str = KeyboardGetStr();
-        //parse(str);
-        GlobalRenderer->FlipDB();
     }
 }

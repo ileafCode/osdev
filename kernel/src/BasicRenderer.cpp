@@ -1,4 +1,5 @@
 #include "BasicRenderer.h"
+#include "IO.h"
 
 BasicRenderer *GlobalRenderer;
 
@@ -33,11 +34,13 @@ uint32_t BasicRenderer::GetPix(uint32_t x, uint32_t y)
 
 void BasicRenderer::PutPixDB(uint32_t x, uint32_t y, uint32_t colour)
 {
+    if (x < 0 || y < 0 || x >= this->TargetFramebuffer->Width || y >= this->TargetFramebuffer->Height) return;
     *(buffer + (y * TargetFramebuffer->Width + x)) = colour;
 }
 
 uint32_t BasicRenderer::GetPixDB(uint32_t x, uint32_t y)
 {
+    if (x < 0 || y < 0 || x >= this->TargetFramebuffer->Width || y >= this->TargetFramebuffer->Height) return 0;
     return *(buffer + (y * TargetFramebuffer->Width + x));
 }
 
@@ -203,16 +206,13 @@ void BasicRenderer::PutChar(uint8_t chr, unsigned int xOff, unsigned int yOff)
 
 void BasicRenderer::PutCharDB(uint8_t chr, unsigned int xOff, unsigned int yOff)
 {
-    unsigned int *pixPtr = (unsigned int *)buffer;
     char *fontPtr = (char *)PSF1_Font->glyphBuffer + (chr * PSF1_Font->psf1_Header->charsize);
     for (unsigned long y = yOff; y < yOff + 16; y++)
     {
         for (unsigned long x = xOff; x < xOff + 8; x++)
         {
             if ((*fontPtr & (0b10000000 >> (x - xOff))) > 0)
-                *(unsigned int *)(pixPtr + x + (y * TargetFramebuffer->PixelsPerScanLine)) = color;
-            //else
-            //    *(unsigned int *)(pixPtr + x + (y * TargetFramebuffer->PixelsPerScanLine)) = bgColor;
+                PutPixDB(x, y, color);
         }
         fontPtr++;
     }
@@ -222,6 +222,7 @@ void BasicRenderer::PutChar(uint8_t chr)
 {
     if (chr == 0)
         return;
+    outb(0xE9, chr);
     if (chr == '\n')
     {
         this->Next();

@@ -1,5 +1,6 @@
 
 #include "stdio.h"
+#include "../IO.h"
 
 void puts(const char* str)
 {

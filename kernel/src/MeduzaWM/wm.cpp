@@ -3,6 +3,8 @@
 #include "../memory/heap.h"
 #include "../cstr.h"
 #include "../userinput/mouse.h"
+#include "../userinput/keyboard.h"
+#include "../stdio/stdio.h"
 
 // absolutely terrible window manager :0
 
@@ -31,6 +33,7 @@ void WindowManager::update()
         {
             window->mouseX = MousePosition.X - window->x;
             window->mouseY = MousePosition.Y - (window->y + WIN_OFFSET);
+            window->sc = KeyboardGetScancode();
         }
 
         if (MousePosition.X >= window->x &&
@@ -55,19 +58,21 @@ void WindowManager::update()
                 this->windows[0] = window;
                 this->windows[i] = temp;
 
-                window->x += MousePosition.X - mouse_oldX;
-                window->y += MousePosition.Y - mouse_oldY;
+                int16_t deltax = MousePosition.X - mouse_oldX;
+                int16_t deltay = MousePosition.Y - mouse_oldY;
+
+                window->x += (int16_t)deltax;
+                window->y += (int16_t)deltay;
 
                 if (window->x < 0)
                     window->x = 0;
-                if (window->y < 0)
+                else if (window->y < 0)
                     window->y = 0;
+                else if (window->x > GlobalRenderer->TargetFramebuffer->Width - WIN_OFFSET)
+                    window->x = GlobalRenderer->TargetFramebuffer->Width - WIN_OFFSET;
 
-                if (window->x + window->width > GlobalRenderer->TargetFramebuffer->Width)
-                    window->x = GlobalRenderer->TargetFramebuffer->Width - window->width;
-
-                if (window->y + window->height > GlobalRenderer->TargetFramebuffer->Height)
-                    window->y = GlobalRenderer->TargetFramebuffer->Height - window->height;
+                else if (window->y > GlobalRenderer->TargetFramebuffer->Height - WIN_OFFSET)
+                    window->y = GlobalRenderer->TargetFramebuffer->Height - WIN_OFFSET;
                 break;
             }
         }
@@ -90,7 +95,6 @@ void WindowManager::update()
                 window_t *temp = this->windows[0];
                 this->windows[0] = window;
                 this->windows[i] = temp;
-
                 break;
             }
         }
@@ -115,12 +119,23 @@ void WindowManager::update()
 
 void WindowManager::draw()
 {
+    // Clear screen
+    GlobalRenderer->ClearDB();
+
+    // Draw windows
     for (int i = this->windowSize - 1; i >= 0; i--)
     {
         if (&this->windows[i] == NULL)
             continue;
         drawWindow(this->windows[i]);
     }
+
+    // Draw cursor
+    GlobalRenderer->ClearMouseCursor(MousePointer, MousePositionOld);
+    GlobalRenderer->DrawOverlayMouseCursor(MousePointer, MousePosition, 0xffffffff);
+
+    // Flip buffers
+    GlobalRenderer->FlipDB();
 }
 
 int prevX = 0;
@@ -165,7 +180,8 @@ void *WindowManager::drawWindow(window_t *window)
     for (int y = 0; y < WIN_OFFSET; y++)
     {
         int minus = 4;
-        if (y < 4) minus = y;
+        if (y < 4)
+            minus = y;
         for (int x = 0; x < window->width + (minus * 2); x++)
         {
             if (window->focus)
@@ -177,7 +193,6 @@ void *WindowManager::drawWindow(window_t *window)
             }
         }
     }
-        
 
     // Draw the borders
     for (int y = WIN_OFFSET; y < window->height + 4 + WIN_OFFSET; y++)
