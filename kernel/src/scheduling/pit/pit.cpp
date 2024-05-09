@@ -23,8 +23,8 @@ namespace PIT
 
     void SetDivisor(uint16_t divisor)
     {
-        if (divisor < 100)
-            divisor = 100;
+        //if (divisor < 100)
+        //    divisor = 100;
         Divisor = divisor;
         outb(0x40, (uint8_t)(divisor & 0x00ff));
         io_wait();
@@ -43,6 +43,6 @@ namespace PIT
 
     void Tick()
     {
-        TimeSinceBoot += 1 / (double)GetFrequency();
+        TimeSinceBoot += 1;
     }
 }

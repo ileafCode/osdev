@@ -8,7 +8,7 @@
 
 struct time_t
 {
-    uint8_t epoch;
+    uint64_t epoch;
     uint8_t second;    // Register 0x00 of CMOS
     uint8_t minute;    // Register 0x02 of CMOS
     uint8_t hour;      // Register 0x04 of CMOS

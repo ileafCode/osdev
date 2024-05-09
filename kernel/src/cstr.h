@@ -12,7 +12,7 @@ int memcmp(const void*, const void*, size_t);
 void* memcpy(void* __restrict, const void* __restrict, size_t);
 void* memmove(void*, const void*, size_t);
 void* memset(void*, int, size_t);
-void* memset32(void*, int, size_t);
+void* memset64(void*, uint64_t, size_t);
 int strint(const char *str);
 void strcpy(char *str1, char *str2);
 unsigned int is_delim(char c, char *delim);

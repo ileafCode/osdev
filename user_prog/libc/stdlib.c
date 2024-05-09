@@ -40,3 +40,9 @@ void fclose(FILE *file)
 {
     free(file);
 }
+
+void exit(int code)
+{
+
+    asm volatile ("movq %0, %%rbx; int $0x85" : : "r"((uint64_t)code));
+}

@@ -73,27 +73,29 @@ void HandlePS2Mouse(uint8_t data)
         skip = false;
         return;
     }
-
-    uint8_t status = inb(0x64);
-
-    // if (!(status & 0x20))
+    
     {
         switch (MouseCycle)
         {
         case 0:
+            if (MousePacketReady) break;
             MousePacket[0] = data;
             if ((data & 0b00001000) == 0)
                 break;
             MouseCycle++;
             break;
         case 1:
+            if (MousePacketReady) break;
             MousePacket[1] = data;
             MouseCycle++;
             break;
         case 2:
+            if (MousePacketReady) break;
             MousePacket[2] = data;
-            if ((MousePacket[0] & 0x80) || (MousePacket[0] & 0x40))
+            if ((MousePacket[0] & 0x80))
                 break;
+            
+            MousePacketReady = true;
 
             if (MousePacket[0] & PS2Leftbutton)
                 mouseButtonData |= PS2Leftbutton;
@@ -129,6 +131,7 @@ void HandlePS2Mouse(uint8_t data)
             MousePositionOld = MousePosition;
 
             MouseCycle = 0;
+            MousePacketReady = false;
             break;
         }
     }

@@ -53,14 +53,10 @@ void parse(char *str)
         FILE *file = mfsOpenFile(args[0]);
         if (file != NULL)
         {
-            elf_program *prg = elf_load(file->filename, file->data);
-
+            void *prg = elf_load(file->filename, file->data);
             if (prg != NULL)
             {
-                GlobalScheduler->makeProc("Process", (void *)prg->entryPoint);
-
-                //((void (*)(void))prg->entryPoint)();
-                free(prg);
+                GlobalScheduler->makeProc("Process", (void *)prg);
             }
             else
                 printf("[%o9ERROR%oF]: %s is not of ELF format.\n", args[0]);
@@ -99,18 +95,32 @@ static inline void cpuid(uint32_t reg, uint32_t *eax, uint32_t *ebx, uint32_t *e
                      : "0"(reg));
 }
 
+extern "C" void enableSSE();
+
+void test()
+{
+    window_t *win = GlobalWM->makeWindow("Hello, world!", 640, 480);
+    while (1)
+    {
+        for (int i = 0; i < win->width * win->height; i++)
+            *(win->pixels + i) = i * PIT::TimeSinceBoot;
+        if (win->sc == 0x01)
+            break;
+    }
+    GlobalWM->deleteWindow(win);
+    GlobalScheduler->delSelf();
+    while (1)
+        ;
+}
+
 extern "C" void _start(BootInfo *bootInfo)
 {
-    KernelInfo kernelInfo = InitializeKernel(bootInfo);
+    InitializeKernel(bootInfo);
 
     vfsMount('A');
-
     mfsInit();
-    
-    GlobalScheduler = new Scheduler();
-    GlobalWM = new WindowManager();
-
-    asm("sti");
+    GlobalRenderer->EnableSecondBuffer();
+    enableSSE();
 
     // ASCII art
     printf(" __       __                  __                                 ______    ______  \n\
@@ -123,15 +133,25 @@ $$ |$$$/ $$ |$$$$$$$$/ $$ \\__$$ |$$ \\__$$ | /$$$$/__ /$$$$$$$ |$$ \\__$$ |/  \
 $$ | $/  $$ |$$       |$$    $$ |$$    $$/ /$$      |$$    $$ |$$    $$/ $$    $$/ \n\
 $$/      $$/  $$$$$$$/  $$$$$$$/  $$$$$$/  $$$$$$$$/  $$$$$$$/  $$$$$$/   $$$$$$/ \n");
 
-    window_t *winTest1 = GlobalWM->makeWindow("Test 1", 320, 240);
-    window_t *winTest2 = GlobalWM->makeWindow("Test 2", 320, 240);
-    window_t *winTest3 = GlobalWM->makeWindow("Test 3", 320, 240);
+    GlobalWM = new WindowManager();
+    GlobalScheduler = new Scheduler();
 
-    *(winTest1->pixels) = 0xFFFFFFFF;
+    asm("sti");
+    GlobalScheduler->makeProc("Test2", (void *)test);
+    FILE *file = mfsOpenFile("wintst.o");
+    if (file != NULL)
+    {
+        void *prg = (void *)elf_load(file->filename, file->data);
+        if (prg != NULL)
+        {
+            GlobalScheduler->makeProc("Test", prg);
+        }
+    }
+    mfsCloseFile(file);
 
     while (true)
     {
-        GlobalWM->update();
         GlobalWM->draw();
+        GlobalWM->update();
     }
 }

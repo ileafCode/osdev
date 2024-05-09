@@ -21,12 +21,12 @@ namespace PCI
         if (pciDeviceHeader->DeviceID == 0xFFFF)
             return;
 
-        /*printf("Vendor: %s; Device: %s; Class: %s; Subclass: %s\n",
-            GetVendorName(pciDeviceHeader->VendorID),
-            GetDeviceName(pciDeviceHeader->VendorID, pciDeviceHeader->DeviceID),
-            GetDeviceClassName(pciDeviceHeader->Class),
-            GetSubclassName(pciDeviceHeader->Class, pciDeviceHeader->Subclass)
-        );*/
+        //printf("Vendor: %s; Device: %s; Class: %s; Subclass: %s\n",
+        //    GetVendorName(pciDeviceHeader->VendorID),
+        //    GetDeviceName(pciDeviceHeader->VendorID, pciDeviceHeader->DeviceID),
+        //    GetDeviceClassName(pciDeviceHeader->Class),
+        //    GetSubclassName(pciDeviceHeader->Class, pciDeviceHeader->Subclass)
+        //);
 
         switch (pciDeviceHeader->Class)
         {
@@ -41,6 +41,18 @@ namespace PCI
                     break;
                 }
             }
+            break;
+        case 0x04:
+            switch (pciDeviceHeader->DeviceID)
+            {
+            case 0x2415:
+                //printf("AC97 FOUND!!!\n");
+                break;
+            
+            default:
+                break;
+            }
+            break;
         }
     }
 

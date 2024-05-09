@@ -1,4 +1,5 @@
 #include "interrupts.h"
+#include "../stdio/stdio.h"
 #include "../panic.h"
 #include "../IO.h"
 #include "../userinput/keyboard.h"
@@ -7,23 +8,28 @@
 __attribute__((interrupt)) void PageFault_Handler(interrupt_frame *frame)
 {
     asm("cli");
-    Panic("Page Fault Detected");
-
-    while (true);
+    Panic("Page Fault Detected\n");
+    printf("at %x\n", frame->rip);
+    while (true)
+        ;
 }
 
 __attribute__((interrupt)) void DoubleFault_Handler(interrupt_frame *frame)
 {
     asm("cli");
-    Panic("Double Fault Detected");
-    while (true);
+    Panic("Double Fault Detected\n");
+    printf("at %x\n", frame->rip);
+    while (true)
+        ;
 }
 
 __attribute__((interrupt)) void GPFault_Handler(interrupt_frame *frame)
 {
     asm("cli");
-    Panic("General Protection Fault Detected");
-    while (true);
+    Panic("General Protection Fault Detected\n");
+    printf("at %x\n", frame->rip);
+    while (true)
+        ;
 }
 
 __attribute__((interrupt)) void KeyboardInt_Handler(interrupt_frame *frame)
@@ -45,7 +51,6 @@ __attribute__((interrupt)) void PITInt_Handler(interrupt_frame *frame)
     PIT::Tick();
     PIC_EndMaster();
     GlobalScheduler->schedule();
-    //task_yield();
 }
 
 void PIC_EndMaster()

@@ -13,7 +13,7 @@ rm -r lib
 make kernel
 make buildimg
 cd ../
-./fsman user_prog/TEXT.TGA user_prog/bin/TEST00.O user_prog/bin/asmtst.o
+./fsman user_prog/TEXT.TGA user_prog/mous.tga user_prog/bin/wintst.o user_prog/bin/asmtst.o
 cd kernel
 make run
 cd ../

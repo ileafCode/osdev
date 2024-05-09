@@ -26,4 +26,6 @@ void free(void *ptr);
 FILE *fopen(char *name);
 void fclose(FILE *file);
 
+void exit(int code);
+
 #endif

@@ -40,7 +40,7 @@ void free(void *address)
 void *malloc(size_t size)
 {
     if (size % 0x10 > 0)
-    { // it is not a multiple of 0x10
+    {
         size -= (size % 0x10);
         size += 0x10;
     }
@@ -57,11 +57,13 @@ void *malloc(size_t size)
             {
                 currentSeg->Split(size);
                 currentSeg->free = false;
+                //printf("[%o3HEAP%oF]: Allocating memory of size %d\n", size);
                 return (void *)((uint64_t)currentSeg + sizeof(HeapSegHdr));
             }
             if (currentSeg->length == size)
             {
                 currentSeg->free = false;
+                //printf("[%o3HEAP%oF]: Allocating memory of size %d\n", size);
                 return (void *)((uint64_t)currentSeg + sizeof(HeapSegHdr));
             }
         }
@@ -132,12 +134,9 @@ void HeapSegHdr::CombineForward()
         LastHdr = this;
 
     if (next->next != NULL)
-    {
         next->next->last = this;
-    }
 
     length = length + next->length + sizeof(HeapSegHdr);
-
     next = next->next;
 }
 

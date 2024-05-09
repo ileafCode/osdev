@@ -1,4 +1,5 @@
 #include "keyboard.h"
+#include "../paging/PageFrameAllocator.h"
 #include "../IO.h"
 
 static char *buffer;
@@ -17,11 +18,11 @@ bool isCapsEnabled = false;
 
 void PrepareKeyboard()
 {
-    buffer = (char *)malloc(512);
-    memset(buffer, 0, 512);
+    buffer = (char *)GlobalAllocator.RequestPage();
+    memset(buffer, 0, 0x1000);
 
-    tempBuffer = (char *)malloc(512);
-    memset(tempBuffer, 0, 512);
+    tempBuffer = (char *)GlobalAllocator.RequestPage();
+    memset(tempBuffer, 0, 0x1000);
 }
 
 // Used differently

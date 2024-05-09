@@ -7,6 +7,7 @@
 #include "../../BasicRenderer.h"
 #include "../../fs/MeduzaFS.h"
 #include "../../scheduling/task/sched.h"
+#include "../../MeduzaWM/wm.h"
 
 __attribute__((interrupt)) void Syscall0(interrupt_frame *frame)
 {
@@ -53,7 +54,8 @@ __attribute__((interrupt)) void Syscall2(interrupt_frame *frame)
     }
     default:
         printf("Unknown allocation type in syscall 0x82\n");
-        while(1);
+        while (1)
+            ;
         break;
     }
     asm("sti");
@@ -96,8 +98,50 @@ __attribute__((interrupt)) void Syscall4(interrupt_frame *frame)
 __attribute__((interrupt)) void Syscall5(interrupt_frame *frame)
 {
     asm("cli");
-    //uint64_t register rbx asm("rbx");
-
     GlobalScheduler->delProc(GlobalScheduler->getCurPID());
+    asm("sti");
+}
+
+// Returns pointer to window in RBX
+__attribute__((interrupt)) void Syscall6(interrupt_frame *frame)
+{
+    asm("cli");
+    uint64_t rax;
+    asm volatile("movq %%r8, %0" : "=r"(rax));
+
+    switch (rax)
+    {
+    case 0:
+    {
+        uint64_t rbx, rcx, rdx;
+        asm volatile("movq %%rbx, %0" : "=r"(rbx));
+        asm volatile("movq %%rcx, %0" : "=r"(rcx));
+        asm volatile("movq %%rdx, %0" : "=r"(rdx));
+        // register uint64_t rbx asm("rbx"); // Window Name
+        // register uint64_t rcx asm("rcx"); // Window Width
+        // register uint64_t rdx asm("rdx"); // Window Height
+
+        char *winName = (char *)rbx;
+        uint16_t winWidth = (uint16_t)rcx;
+        uint16_t winHeight = (uint16_t)rdx;
+        window_t *window = GlobalWM->makeWindow(winName, winWidth, winHeight);
+
+        printf("Created window at 0x%x with width %d and height %d\n", window, winWidth, winHeight);
+        asm volatile("movq %0, %%rbx;" : : "r"(window));
+        printf("RBX: %x\n", rbx);
+        break;
+    }
+    case 1:
+    {
+        uint64_t rbx;
+        asm volatile("movq %%rbx, %0" : "=r"(rbx));
+        GlobalWM->deleteWindow((window_t *)rbx);
+        break;
+    }
+
+    //default:
+    //    break;
+    }
+
     asm("sti");
 }

@@ -5,16 +5,23 @@
 #include "../userinput/mouse.h"
 #include "../userinput/keyboard.h"
 #include "../stdio/stdio.h"
+#include "../paging/PageFrameAllocator.h"
 
 // absolutely terrible window manager :0
 
 WindowManager *GlobalWM;
 
+uint32_t RGBtoHex(uint8_t r, uint8_t g, uint8_t b)
+{
+    return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+}
+
 #define WIN_OFFSET 35
 
-WindowManager::WindowManager()
+WindowManager::WindowManager() : taskBar(40, 100, 100, 127), mouseCur("mous.tga")
 {
-    // this->windows.reserve(5);
+    // GlobalRenderer->ClearDB();
+    //  this->windows.reserve(5);
 }
 
 int mouse_oldX = 0;
@@ -22,19 +29,18 @@ int mouse_oldY = 0;
 
 void WindowManager::update()
 {
+    bool canClick = true;
     for (int i = 0; i < windowSize; i++)
     {
         window_t *window = this->windows[i];
         if (window == NULL)
             continue;
 
-        // Send mouse position data relative to the window
+        if (MousePosition.X != mouse_oldX || MousePosition.Y != mouse_oldY)
+            this->redraw = true;
+
         if (window->focus)
-        {
-            window->mouseX = MousePosition.X - window->x;
-            window->mouseY = MousePosition.Y - (window->y + WIN_OFFSET);
             window->sc = KeyboardGetScancode();
-        }
 
         if (MousePosition.X >= window->x &&
             MousePosition.X <= window->x + window->width &&
@@ -45,70 +51,64 @@ void WindowManager::update()
             if ((mouseButtonData & PS2Leftbutton))
             {
                 // Mouse left button is pressed
-                for (int j = 0; j < this->windowSize; j++)
-                {
-                    window_t *window_ = this->windows[j];
-                    if (window_ == NULL)
-                        continue;
-                    window_->focus = false;
-                }
+                canClick = false;
+                this->redraw = true;
+
+                focusedWin->focus = false;
 
                 window->focus = true;
+                focusedWin = window;
                 window_t *temp = this->windows[0];
                 this->windows[0] = window;
                 this->windows[i] = temp;
 
-                int16_t deltax = MousePosition.X - mouse_oldX;
-                int16_t deltay = MousePosition.Y - mouse_oldY;
+                window->x += (int16_t)MousePosition.X - mouse_oldX;
+                window->y += (int16_t)MousePosition.Y - mouse_oldY;
 
-                window->x += (int16_t)deltax;
-                window->y += (int16_t)deltay;
-
-                if (window->x < 0)
-                    window->x = 0;
-                else if (window->y < 0)
-                    window->y = 0;
-                else if (window->x > GlobalRenderer->TargetFramebuffer->Width - WIN_OFFSET)
-                    window->x = GlobalRenderer->TargetFramebuffer->Width - WIN_OFFSET;
-
-                else if (window->y > GlobalRenderer->TargetFramebuffer->Height - WIN_OFFSET)
-                    window->y = GlobalRenderer->TargetFramebuffer->Height - WIN_OFFSET;
+                // if (window->x < 0)
+                //     window->x = 0;
+                // else if (window->y < 0)
+                //     window->y = 0;
+                // else if (window->x > GlobalRenderer->TargetFramebuffer->Width - window->width)
+                //     window->x = GlobalRenderer->TargetFramebuffer->Width  - window->width;
+                // else if (window->y > GlobalRenderer->TargetFramebuffer->Height - window->height)
+                //     window->y = GlobalRenderer->TargetFramebuffer->Height - window->height;
                 break;
             }
         }
         else if (MousePosition.X >= window->x &&
                  MousePosition.X <= window->x + window->width &&
                  MousePosition.Y >= window->y + WIN_OFFSET &&
-                 MousePosition.Y <= window->y + window->height)
+                 MousePosition.Y <= window->y + window->height + WIN_OFFSET)
         {
             if ((mouseButtonData & PS2Leftbutton))
             {
-                for (int j = 0; j < this->windowSize; j++)
-                {
-                    window_t *window_ = this->windows[j];
-                    if (window_ == NULL)
-                        continue;
-                    window_->focus = false;
-                }
+                canClick = false;
+                this->redraw = true;
+                focusedWin->focus = false;
 
                 window->focus = true;
+                focusedWin = window;
                 window_t *temp = this->windows[0];
                 this->windows[0] = window;
                 this->windows[i] = temp;
                 break;
+            }
+            // Send mouse position data relative to the window
+            if (window->focus)
+            {
+                window->mouseButtons = mouseButtonData;
+                window->mouseX = MousePosition.X - window->x;
+                window->mouseY = MousePosition.Y - (window->y + WIN_OFFSET);
             }
         }
         else
         {
             if ((mouseButtonData & PS2Leftbutton))
             {
-                for (int j = 0; j < this->windowSize; j++)
-                {
-                    window_t *window_ = this->windows[j];
-                    if (window_ == NULL)
-                        continue;
-                    window_->focus = false;
-                }
+                this->redraw = true;
+                focusedWin->focus = false;
+                focusedWin = NULL;
             }
         }
     }
@@ -119,23 +119,29 @@ void WindowManager::update()
 
 void WindowManager::draw()
 {
-    // Clear screen
+    // if (!redraw) return;
     GlobalRenderer->ClearDB();
+
+    //this->img.draw(0, 0, GlobalRenderer->TargetFramebuffer->Width, GlobalRenderer->TargetFramebuffer->Height);
+
+    //Draw taskbar
+    this->taskBar.draw();
 
     // Draw windows
     for (int i = this->windowSize - 1; i >= 0; i--)
     {
-        if (&this->windows[i] == NULL)
+        if (this->windows[i] == NULL)
             continue;
         drawWindow(this->windows[i]);
     }
 
     // Draw cursor
-    GlobalRenderer->ClearMouseCursor(MousePointer, MousePositionOld);
-    GlobalRenderer->DrawOverlayMouseCursor(MousePointer, MousePosition, 0xffffffff);
+    // GlobalRenderer->DrawOverlayMouseCursor(MousePointer, MousePosition, 0xffffffff);
+    this->mouseCur.draw(MousePosition.X, MousePosition.Y);
 
     // Flip buffers
     GlobalRenderer->FlipDB();
+    redraw = false;
 }
 
 int prevX = 0;
@@ -143,6 +149,10 @@ int prevY = 0;
 
 window_t *WindowManager::makeWindow(char *name, uint16_t width, uint16_t height)
 {
+    if (width < 320)
+        width = 320;
+    if (height < 240)
+        height = 240;
     window_t *window = (window_t *)malloc(sizeof(window_t));
     window->x = 10 + prevX;
     window->y = 10 + prevY;
@@ -153,12 +163,9 @@ window_t *WindowManager::makeWindow(char *name, uint16_t width, uint16_t height)
     window->focus = true;
 
     for (int i = 0; i < windowSize; i++)
-    {
         this->windows[i]->focus = false;
-        this->windows[i]->id++;
-    }
 
-    window->id = 0;
+    window->id = windowSize;
     window->pixels = (uint32_t *)malloc(width * height * 4);
 
     strcpy(window->name, name);
@@ -166,72 +173,90 @@ window_t *WindowManager::makeWindow(char *name, uint16_t width, uint16_t height)
 
     this->windows[windowSize++] = window;
 
+    this->focusedWin = window;
+    this->redraw = true;
     return window;
 }
 
-uint32_t RGBtoHex(uint8_t r, uint8_t g, uint8_t b)
+void WindowManager::deleteWindow(window_t *window)
 {
-    return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+    if (window == NULL)
+        return;
+
+    if (window->pixels != NULL)
+    {
+        free(window->pixels);
+        window->pixels = NULL;
+    }
+
+    printf("%d\n", windowSize);
+
+    for (int i = 0; i < this->windowSize; i++)
+    {
+        if (this->windows[i] == window)
+        {
+            for (int j = i; j < this->windowSize - 1; j++)
+                this->windows[j] = this->windows[j + 1];
+            //this->windows[i] = NULL;
+            this->windowSize--;
+            break;
+        }
+    }
+
+    printf("%d\n", windowSize);
+    free(window);
 }
 
-void *WindowManager::drawWindow(window_t *window)
+void WindowManager::drawWindow(window_t *window)
 {
+    if (window == NULL)
+        return;
+    int windowX = window->x - 1;
+    int windowY = window->y;
+    int windowWidth = window->width;
+    int windowHeight = window->height;
+    int titleLength = strlen(window->name);
+    uint32_t titleColor = window->focus ? RGBtoHex(100 - WIN_OFFSET, 100 - WIN_OFFSET, 127 - WIN_OFFSET) : RGBtoHex(115 - WIN_OFFSET, 115 - WIN_OFFSET, 127 - WIN_OFFSET);
+
     // Draw the titlebar
     for (int y = 0; y < WIN_OFFSET; y++)
     {
-        int minus = 4;
-        if (y < 4)
-            minus = y;
-        for (int x = 0; x < window->width + (minus * 2); x++)
+        for (int x = 0; x < windowWidth; x += 8)
         {
-            if (window->focus)
-                GlobalRenderer->PutPixDB(window->x + x - minus, window->y + y, RGBtoHex(100 - (y), 100 - (y), 127 - (y)));
-            else
-            {
-                GlobalRenderer->color = RGBtoHex(200, 200, 240);
-                GlobalRenderer->PutPixDB(window->x + x - minus, window->y + y, RGBtoHex(115 - (y), 115 - (y), 127 - (y)));
-            }
+            GlobalRenderer->PutPixDB(windowX + x, windowY + y, titleColor);
+            GlobalRenderer->PutPixDB(windowX + x + 1, windowY + y, titleColor);
+            GlobalRenderer->PutPixDB(windowX + x + 2, windowY + y, titleColor);
+            GlobalRenderer->PutPixDB(windowX + x + 3, windowY + y, titleColor);
+            GlobalRenderer->PutPixDB(windowX + x + 4, windowY + y, titleColor);
+            GlobalRenderer->PutPixDB(windowX + x + 5, windowY + y, titleColor);
+            GlobalRenderer->PutPixDB(windowX + x + 6, windowY + y, titleColor);
+            GlobalRenderer->PutPixDB(windowX + x + 7, windowY + y, titleColor);
         }
     }
 
     // Draw the borders
-    for (int y = WIN_OFFSET; y < window->height + 4 + WIN_OFFSET; y++)
-    {
-        uint32_t color = RGBtoHex(100 - WIN_OFFSET, 100 - WIN_OFFSET, 127 - WIN_OFFSET);
-        if (!window->focus)
-            color = RGBtoHex(115 - WIN_OFFSET, 115 - WIN_OFFSET, 127 - WIN_OFFSET);
-
-        GlobalRenderer->PutPixDB(window->x - 4, window->y + y, color);
-        GlobalRenderer->PutPixDB(window->x - 3, window->y + y, color);
-        GlobalRenderer->PutPixDB(window->x - 2, window->y + y, color);
-        GlobalRenderer->PutPixDB(window->x - 1, window->y + y, color);
-
-        GlobalRenderer->PutPixDB(window->x + window->width + 0, window->y + y, color);
-        GlobalRenderer->PutPixDB(window->x + window->width + 1, window->y + y, color);
-        GlobalRenderer->PutPixDB(window->x + window->width + 2, window->y + y, color);
-        GlobalRenderer->PutPixDB(window->x + window->width + 3, window->y + y, color);
-    }
-
-    for (int x = 0; x < window->width; x++)
-    {
-        uint32_t color = RGBtoHex(100 - WIN_OFFSET, 100 - WIN_OFFSET, 127 - WIN_OFFSET);
-        if (!window->focus)
-            color = RGBtoHex(115 - WIN_OFFSET, 115 - WIN_OFFSET, 127 - WIN_OFFSET);
-
-        GlobalRenderer->PutPixDB(window->x + x, window->y + window->height + WIN_OFFSET + 0, color);
-        GlobalRenderer->PutPixDB(window->x + x, window->y + window->height + WIN_OFFSET + 1, color);
-        GlobalRenderer->PutPixDB(window->x + x, window->y + window->height + WIN_OFFSET + 2, color);
-        GlobalRenderer->PutPixDB(window->x + x, window->y + window->height + WIN_OFFSET + 3, color);
-    }
+    // for (int y = WIN_OFFSET; y < windowHeight + 1 + WIN_OFFSET; y++)
+    //{
+    //    GlobalRenderer->PutPixDB(windowX, windowY + y, titleColor);
+    //    GlobalRenderer->PutPixDB(windowX + windowWidth, windowY + y, titleColor);
+    //}
+    // for (int x = 0; x < windowWidth; x++)
+    //    GlobalRenderer->PutPixDB(windowX + x, windowY + windowHeight + WIN_OFFSET, titleColor);
 
     // Draw the title
-    for (int i = 0; i < strlen(window->name); i++)
-        GlobalRenderer->PutCharDB(window->name[i], window->x + 10 + (i * 8), window->y + 10);
+    for (int i = 0; i < titleLength; i++)
+    {
+        GlobalRenderer->PutCharDB(window->name[i], windowX + 10 + (i * 8), windowY + 10);
+    }
 
     GlobalRenderer->color = 0xFFFFFFFF;
-
     // Draw the buffer of the window
-    for (int y = 0; y < window->height; y++)
-        for (int x = 0; x < window->width; x++)
-            GlobalRenderer->PutPixDB(window->x + x, window->y + y + WIN_OFFSET, *(window->pixels + (y * window->width + x)));
+    for (int y = 0; y < windowHeight; y++)
+        for (int x = 0; x < windowWidth; x += 4)
+        {
+            GlobalRenderer->PutPixDB(windowX + x, windowY + y + WIN_OFFSET, *(window->pixels + (y * windowWidth + x)));
+            GlobalRenderer->PutPixDB(windowX + x + 1, windowY + y + WIN_OFFSET, *(window->pixels + (y * windowWidth + x + 1)));
+            GlobalRenderer->PutPixDB(windowX + x + 2, windowY + y + WIN_OFFSET, *(window->pixels + (y * windowWidth + x + 2)));
+            GlobalRenderer->PutPixDB(windowX + x + 3, windowY + y + WIN_OFFSET, *(window->pixels + (y * windowWidth + x + 3)));
+        }
 }

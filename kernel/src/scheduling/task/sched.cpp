@@ -3,6 +3,7 @@
 #include "../../stdio/stdio.h"
 #include "../../paging/PageFrameAllocator.h"
 #include "../../memory/heap.h"
+#include "../../MeduzaWM/wm.h"
 
 Scheduler *GlobalScheduler;
 // task mainTask;
@@ -23,7 +24,7 @@ Scheduler::Scheduler()
     asm volatile("movq %%cr3, %%rax; movq %%rax, %0;" : "=m"(this->tasks[0].regs.cr3)::"%rax");
     asm volatile("pushfq; movq (%%rsp), %%rax; movq %%rax, %0; popfq;" : "=m"(this->tasks[0].regs.eflags)::"%rax");
 
-    this->makeProc("Idle", (void*)idle1);
+    //this->makeProc("Idle", (void*)idle1);
 }
 Scheduler::~Scheduler()
 {
@@ -93,7 +94,8 @@ void Scheduler::makeProc(char name[16], void *entry)
     this->tasks[this->pids].regs.eflags = this->tasks[0].regs.eflags;
     this->tasks[this->pids].regs.rip = (uint64_t)entry;
     this->tasks[this->pids].regs.cr3 = this->tasks[0].regs.cr3;
-    this->tasks[this->pids].regs.rsp = (uint64_t)malloc(0x1000) + 0x1000;
+    this->tasks[this->pids].origStackAddr = (uint64_t)malloc(0x1000);
+    this->tasks[this->pids].regs.rsp = this->tasks[this->pids].origStackAddr + 0x1000;
 
     this->tasks[this->pids].pid = this->pids;
     this->tasks[this->pids].state = QUEUED;
@@ -111,11 +113,12 @@ void Scheduler::yield()
 
 void Scheduler::delProc(uint16_t pid)
 {
-    free((void *)(this->tasks[pid].regs.rsp - 0x1000));
+    free((void *)(this->tasks[pid].origStackAddr));
 
     for (int i = pid; i < this->pids; i++)
     {
         this->tasks[i] = this->tasks[i + 1];
+        this->tasks[i].pid--;
     }
 
     this->pids--;
@@ -129,4 +132,5 @@ uint16_t Scheduler::getCurPID()
 void Scheduler::delSelf()
 {
     this->delProc(this->getCurPID());
+    while(1);
 }

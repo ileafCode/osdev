@@ -9,6 +9,8 @@ int dirinfo_offset = 17;
 DIRINFO *rootDir;
 DIRINFO *curDir;
 
+DIRINFO *prevDir;
+
 FILEINFO *filesInfo;
 DIRINFO *dirsInfo;
 SUPERBLOCK *superBlock;
@@ -141,8 +143,8 @@ FILE *mfsOpenFile(char *path)
     
     // this is a very bad idea
     path[strlen(path) - 8] = 0;
-
-    DIRINFO *prevDir = (DIRINFO *)malloc(sizeof(DIRINFO));
+    
+    //DIRINFO *prevDir = (DIRINFO *)malloc(sizeof(DIRINFO));
     for (int i = 0; i < 8; i++)
         prevDir->dirname[i] = curDir->dirname[i];
     prevDir->dirSig = curDir->dirSig;
@@ -163,7 +165,7 @@ FILE *mfsOpenFile(char *path)
     curDir->magic = prevDir->magic;
     curDir->parentDirId = prevDir->parentDirId;
 
-    free(prevDir);
+    //free(prevDir);
 
     AHCI::Port *port = g_ahciDriver->ports[0];
 
@@ -172,7 +174,7 @@ FILE *mfsOpenFile(char *path)
 
     while (true)
     {
-        vfsRead(filedata_offset + i, 2, port->buffer);
+        vfsRead(filedata_offset + i, 1, port->buffer);
         FILE_DATABLOCK *dataBlock = (FILE_DATABLOCK *)port->buffer;
 
         if (dataBlock->magic == 0x9F8F)
@@ -208,15 +210,15 @@ FILE *mfsOpenFile(char *path)
         i++;
     }
 
-    FILE *ret = (FILE *)malloc(sizeof(FILE));
+    FILE *ret = (FILE*)malloc(sizeof(FILE));//GlobalAllocator.RequestPage();
     ret->data = (uint8_t *)malloc((size * 504));
+
+    for (i = 0; i < size * 504; i++)
+        ret->data[i] = data[i];
 
     for (i = 0; i < 8; i++)
         ret->filename[i] = filesInfo[id].filename[i];
     ret->filename[8] = '\0';
-
-    for (i = 0; i < size * 504; i++)
-        ret->data[i] = data[i];
 
     ret->magic = 0x9F018F02;
     ret->sizeSector = size;
@@ -232,7 +234,7 @@ void mfsCloseFile(FILE *file)
     {
         free(file->data);
         free(file);
-        // GlobalAllocator.FreePage(file);
+        //GlobalAllocator.FreePage(file);
     }
     else
         printf("File is NULL, cannot close\n");
@@ -257,10 +259,10 @@ void mfsInit()
 
     filesInfo = (FILEINFO *)malloc(sizeof(FILEINFO) * superBlock->numFiles);
     dirsInfo = (DIRINFO *)malloc(sizeof(DIRINFO) * (superBlock->numFiles + 1));
-
-    curDir = (DIRINFO *)malloc(sizeof(DIRINFO));
-
-    rootDir = (DIRINFO *)malloc(sizeof(DIRINFO));
+    curDir = (DIRINFO *)GlobalAllocator.RequestPage();//malloc(sizeof(DIRINFO));
+    rootDir = (DIRINFO *)GlobalAllocator.RequestPage();
+    prevDir = (DIRINFO *)GlobalAllocator.RequestPage();
+    
     for (int i = 0; i < 8; i++)
         rootDir->dirname[i] = "ROOT\0   "[i];
     rootDir->id.val = 0;

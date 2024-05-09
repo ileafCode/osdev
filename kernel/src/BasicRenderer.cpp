@@ -34,24 +34,32 @@ uint32_t BasicRenderer::GetPix(uint32_t x, uint32_t y)
 
 void BasicRenderer::PutPixDB(uint32_t x, uint32_t y, uint32_t colour)
 {
-    if (x < 0 || y < 0 || x >= this->TargetFramebuffer->Width || y >= this->TargetFramebuffer->Height) return;
+    if (x < 0 || y < 0 || x > this->TargetFramebuffer->Width - 1 || y > this->TargetFramebuffer->Height - 1) return;
     *(buffer + (y * TargetFramebuffer->Width + x)) = colour;
 }
 
 uint32_t BasicRenderer::GetPixDB(uint32_t x, uint32_t y)
 {
-    if (x < 0 || y < 0 || x >= this->TargetFramebuffer->Width || y >= this->TargetFramebuffer->Height) return 0;
+    if (x < 0 || y < 0 || x >= this->TargetFramebuffer->Width - 1 || y >= this->TargetFramebuffer->Height - 1) return 0;
     return *(buffer + (y * TargetFramebuffer->Width + x));
 }
 
 void BasicRenderer::FlipDB()
 {
-    memcpy((void *)TargetFramebuffer->BaseAddress, (void *)buffer, TargetFramebuffer->Width * TargetFramebuffer->Height * 4);
+    size_t count = TargetFramebuffer->Width * TargetFramebuffer->Height / 2;
+    void *dest = TargetFramebuffer->BaseAddress;
+    void *src  = (void *)buffer;
+    asm volatile ("cld; rep movsq" : "+c" (count),
+        "+S" (src), "+D" (dest) :: "memory");
+    //memcpy((void *)TargetFramebuffer->BaseAddress, (void *)buffer, TargetFramebuffer->Width * TargetFramebuffer->Height);
 }
 
 void BasicRenderer::ClearDB()
 {
-    memset32((void *)buffer, 0, TargetFramebuffer->Width * TargetFramebuffer->Height);
+    size_t count = TargetFramebuffer->Width * TargetFramebuffer->Height / 2;
+    void *b = (void *)buffer;
+    asm volatile ("cld; rep stosq" : "+c" (count), "+D" (b) : "a" (0) : "memory");
+    //memset64((void *)buffer, 0, (TargetFramebuffer->Width * TargetFramebuffer->Height) / 2);
 }
 
 void BasicRenderer::ClearMouseCursor(uint8_t *mouseCursor, Point position)
@@ -61,13 +69,13 @@ void BasicRenderer::ClearMouseCursor(uint8_t *mouseCursor, Point position)
 
     int xMax = 16;
     int yMax = 16;
-    int differenceX = TargetFramebuffer->Width - position.X;
-    int differenceY = TargetFramebuffer->Height - position.Y;
+    //int differenceX = TargetFramebuffer->Width - position.X;
+    //int differenceY = TargetFramebuffer->Height - position.Y;
 
-    if (differenceX < 16)
-        xMax = differenceX;
-    if (differenceY < 16)
-        yMax = differenceY;
+    //if (differenceX < 16)
+    //    xMax = differenceX;
+    //if (differenceY < 16)
+    //    yMax = differenceY;
 
     for (int y = 0; y < yMax; y++)
     {
@@ -86,13 +94,13 @@ void BasicRenderer::DrawOverlayMouseCursor(uint8_t *mouseCursor, Point position,
 {
     int xMax = 16;
     int yMax = 16;
-    int differenceX = TargetFramebuffer->Width - position.X;
-    int differenceY = TargetFramebuffer->Height - position.Y;
+    //int differenceX = TargetFramebuffer->Width - position.X;
+    //int differenceY = TargetFramebuffer->Height - position.Y;
 
-    if (differenceX < 16)
-        xMax = differenceX;
-    if (differenceY < 16)
-        yMax = differenceY;
+    //if (differenceX < 16)
+    //    xMax = differenceX;
+    //f (differenceY < 16)
+    //    yMax = differenceY;
 
     for (int y = 0; y < yMax; y++)
     {

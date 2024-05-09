@@ -102,10 +102,11 @@ int memcmp(const void *aptr, const void *bptr, size_t size)
     return 0;
 }
 
+// WARNING: 64-BIT
 void *memcpy(void *__restrict b, const void *__restrict a, size_t n)
 {
-    char *s1 = (char *)b;
-    const char *s2 = (const char *)a;
+    uint64_t *s1 = (uint64_t *)b;
+    const uint64_t *s2 = (const uint64_t *)a;
     for (; 0 < n; --n)
         *s1++ = *s2++;
     return b;
@@ -136,11 +137,11 @@ void *memset(void *bufptr, int value, size_t size)
     return bufptr;
 }
 
-void *memset32(void *bufptr, int value, size_t size)
+void *memset64(void *bufptr, uint64_t value, size_t size)
 {
-    unsigned int *buf = (unsigned int *)bufptr;
+    uint64_t *buf = (uint64_t*)bufptr;
     for (size_t i = 0; i < size; i++)
-        buf[i] = (unsigned int)value;
+        buf[i] = (uint64_t)value;
     return bufptr;
 }
 

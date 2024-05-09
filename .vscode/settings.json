@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "fb.h": "c",
+        "compare": "cpp",
+        "cstdint": "cpp",
+        "algorithm": "cpp",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "typeinfo": "cpp",
+        "wm.h": "c",
+        "stdint.h": "c",
+        "stdlib.h": "c"
+    }
+}

@@ -3,7 +3,7 @@
 #include "../../vector/vector.h"
 #include <stdint.h>
 
-#define MAX_QUANTUM 1  // Max amount of quanta (quanta means quantum plural)
+#define MAX_QUANTUM 0  // Max amount of quanta (quanta means quantum plural)
 #define MAX_PROCESS 20 // Maximum amount of processes
 
 // All 64-bit registers
@@ -23,6 +23,7 @@ enum TaskState
 // Task struct
 struct task
 {
+    uint64_t origStackAddr;
     registers regs; // Registers for each task
     uint16_t pid;   // Process ID
     char name[16];  // Process name

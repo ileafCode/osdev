@@ -253,4 +253,4 @@ struct elf_program
 
 int elf_get_err();
 int elf_verify(uint8_t *bytes);
-elf_program *elf_load(char name[8], uint8_t *bytes);
+void *elf_load(char name[8], uint8_t *bytes);

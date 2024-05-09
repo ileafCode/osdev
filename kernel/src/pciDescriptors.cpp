@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "cstr.h"
+#include "stdio/stdio.h"
 
 namespace PCI
 {
@@ -133,6 +134,8 @@ namespace PCI
             return "Serial IO I2C Host Controller";
         case 0x8C22:
             return "HD Graphics 2000";
+        case 0x2415:
+            return "AC97 Audio";
 
         default:
             return "Unknown/Undefined Intel Device";
