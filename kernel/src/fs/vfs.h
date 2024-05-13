@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include "../ahci/ahci.h"
 
+#define BLOCK_SIZE 512
+
 struct VFS_NAME
 {
     char name;

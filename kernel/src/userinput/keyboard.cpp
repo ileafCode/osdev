@@ -3,7 +3,7 @@
 #include "../IO.h"
 
 static char *buffer;
-static char* tempBuffer;
+//static char* tempBuffer;
 int bufferIdx = 0;
 char last_ch = 0;
 uint8_t lastScancode = 0;
@@ -18,11 +18,11 @@ bool isCapsEnabled = false;
 
 void PrepareKeyboard()
 {
-    buffer = (char *)GlobalAllocator.RequestPage();
-    memset(buffer, 0, 0x1000);
+    buffer = (char *)malloc(512);
+    memset(buffer, 0, 512);
 
-    tempBuffer = (char *)GlobalAllocator.RequestPage();
-    memset(tempBuffer, 0, 0x1000);
+    //tempBuffer = (char *)malloc(512);
+    //memset(tempBuffer, 0, 512);
 }
 
 // Used differently
@@ -54,6 +54,8 @@ void HandleKeyboard(uint8_t scancode)
     case Enter:
         last_ch = '\n';
         GlobalRenderer->Next();
+        buffer[bufferIdx] = 0;
+        bufferIdx = 0;
         return;
     case Spacebar:
         last_ch = ' ';
@@ -130,15 +132,15 @@ char *KeyboardGetStr()
     while (last_ch != '\n');
     last_ch = 0;
 
-    for (int i = 0; i < 512; i++) {
-        tempBuffer[i] = buffer[i];
-    }
+    //for (int i = 0; i < 512; i++) {
+    //    tempBuffer[i] = buffer[i];
+    //}
 
-    memset(buffer, 0, 512);
+    //memset(buffer, 0, 512);
     
     bufferIdx = 0;
 
     isBufferEnabled = false;
     isKeyboardEnabled = false;
-    return tempBuffer;
+    return buffer;
 }

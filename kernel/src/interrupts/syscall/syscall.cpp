@@ -5,7 +5,7 @@
 #include "../../userinput/mouse.h"
 #include "../../userinput/keyboard.h"
 #include "../../BasicRenderer.h"
-#include "../../fs/MeduzaFS.h"
+//#include "../../fs/MeduzaFS.h"
 #include "../../scheduling/task/sched.h"
 #include "../../MeduzaWM/wm.h"
 
@@ -87,8 +87,8 @@ __attribute__((interrupt)) void Syscall4(interrupt_frame *frame)
     {
         char *fileName;
         asm volatile("movq %%rcx, %0;" : "=r"(fileName));
-        FILE *file = mfsOpenFile(fileName);
-        asm volatile("movq %0, %%rbx;" : : "r"(file));
+        //FILE *file = mfsOpenFile(fileName);
+        //asm volatile("movq %0, %%rbx;" : : "r"(file));
         break;
     }
     }
@@ -98,7 +98,7 @@ __attribute__((interrupt)) void Syscall4(interrupt_frame *frame)
 __attribute__((interrupt)) void Syscall5(interrupt_frame *frame)
 {
     asm("cli");
-    GlobalScheduler->delProc(GlobalScheduler->getCurPID());
+    sched_delSelf();
     asm("sti");
 }
 

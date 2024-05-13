@@ -12,8 +12,8 @@ cd ../kernel
 rm -r lib
 make kernel
 make buildimg
-cd ../
-./fsman user_prog/TEXT.TGA user_prog/mous.tga user_prog/bin/wintst.o user_prog/bin/asmtst.o
-cd kernel
+#cd ../
+#./fsman user_prog/mous.tga user_prog/bin/wintst.o
+#cd kernel
 make run
 cd ../

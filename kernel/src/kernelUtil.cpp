@@ -11,7 +11,6 @@
 #include "apic/apic.h"
 #include "scheduling/task/sched.h"
 #include "scheduling/pit/pit.h"
-#include "fs/MeduzaFS.h"
 #include "MeduzaWM/wm.h"
 
 KernelInfo kernelInfo;
@@ -112,13 +111,12 @@ KernelInfo InitializeKernel(BootInfo *bootInfo)
     PrepareMemory(bootInfo);
     printf("[%oEMEM%oF]: Paging initialized\n");
 
-    printf("[%o3HEAP%oF]: Heap initialized (%d pages allocated)\n",
-        (GlobalAllocator.GetFreeRAM() / 0x1000) / 2);
-    InitializeHeap((void *)0x0000100000000000, (GlobalAllocator.GetFreeRAM() / 0x1000) / 2);
-
-    //int *t1 = (int *)malloc(32);
-    
-    PrepareACPI(bootInfo);
+#if HEAP_IMPL == 0
+    InitializeHeap((void *)0x100000000000, (GlobalAllocator.GetFreeRAM() / 0x1000) / 3);
+#elif HEAP_IMPL == 1
+    init_heap(GlobalAllocator.RequestPage());
+#else
+#endif
 
     PrepareInterrupts();
 
@@ -132,6 +130,8 @@ KernelInfo InitializeKernel(BootInfo *bootInfo)
     outb(PIC2_DATA, 0b11101111);
 
     PIT::SetFrequency(1000);
+
+    PrepareACPI(bootInfo);
     
     return kernelInfo;
 }

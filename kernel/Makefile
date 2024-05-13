@@ -37,6 +37,11 @@ $(OBJDIR)/interrupts/syscall/syscall.o: $(SRCDIR)/interrupts/syscall/syscall.cpp
 	@ mkdir -p $(@D)
 	$(CC) -mno-red-zone -mgeneral-regs-only -ffreestanding -c $^ -o $@
 
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	@ echo !==== COMPILING $^
+	@ mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $^ -o $@
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	@ echo !==== COMPILING $^
 	@ mkdir -p $(@D)
@@ -61,6 +66,7 @@ buildimg:
 	mkfs.vfat -F 32 $(BUILDDIR)/$(OSNAME).img
 	mmd -i $(BUILDDIR)/$(OSNAME).img ::/EFI
 	mmd -i $(BUILDDIR)/$(OSNAME).img ::/EFI/BOOT
+	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/test.txt ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BOOTEFI) ::/EFI/BOOT
 	mcopy -i $(BUILDDIR)/$(OSNAME).img startup.nsh ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/kernel.elf ::

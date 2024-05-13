@@ -10,6 +10,9 @@
         "typeinfo": "cpp",
         "wm.h": "c",
         "stdint.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "cstdlib": "cpp",
+        "initializer_list": "cpp",
+        "cmath": "cpp"
     }
 }

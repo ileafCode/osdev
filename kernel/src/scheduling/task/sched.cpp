@@ -5,7 +5,17 @@
 #include "../../memory/heap.h"
 #include "../../MeduzaWM/wm.h"
 
-Scheduler *GlobalScheduler;
+int quantum = MAX_QUANTUM;
+// How many processes are there
+int pids = 1;
+// Current process
+uint16_t curPID = 0;
+// Previous process
+uint16_t prevPID = 0;
+// Ticks since boot
+uint64_t ticks = 0;
+// All the tasks
+task tasks[MAX_PROCESS];
 // task mainTask;
 
 extern "C" void switchTask(registers *, registers *);
@@ -13,29 +23,24 @@ extern "C" void switchTask(registers *, registers *);
 void idle1()
 {
     while (1)
-        ;//printf(" 1");
+        ; // printf(" 1");
 }
 
-Scheduler::Scheduler()
+void sched_init()
 {
     for (int i = 0; i < 16; i++)
-        this->tasks[0].name[i] = "Kernel"[i];
+        tasks[0].name[i] = "Kernel"[i];
 
-    asm volatile("movq %%cr3, %%rax; movq %%rax, %0;" : "=m"(this->tasks[0].regs.cr3)::"%rax");
-    asm volatile("pushfq; movq (%%rsp), %%rax; movq %%rax, %0; popfq;" : "=m"(this->tasks[0].regs.eflags)::"%rax");
-
-    //this->makeProc("Idle", (void*)idle1);
-}
-Scheduler::~Scheduler()
-{
+    asm volatile("movq %%cr3, %%rax; movq %%rax, %0;" : "=m"(tasks[0].regs.cr3)::"%rax");
+    asm volatile("pushfq; movq (%%rsp), %%rax; movq %%rax, %0; popfq;" : "=m"(tasks[0].regs.eflags)::"%rax");
 }
 
-void Scheduler::printTasks()
+void sched_printTasks()
 {
-    printf("[Name] : [State] : [PID] : [ADDR] : %d/%d tasks are running\n", this->pids, MAX_PROCESS);
-    for (int i = 0; i < this->pids; i++)
+    printf("[Name] : [State] : [PID] : [ADDR] : %d/%d tasks are running\n", pids, MAX_PROCESS);
+    for (int i = 0; i < pids; i++)
     {
-        task curTask = this->tasks[i];
+        task curTask = tasks[i];
         char state[10];
         if (curTask.state == RUNNING)
             for (int i = 0; i < 10; i++)
@@ -47,90 +52,91 @@ void Scheduler::printTasks()
     }
 }
 
-void Scheduler::schedule()
+void sched_schedule()
 {
     // Return if there are no processes
     if (pids == 0)
         return;
 
     // If the time of the process did not pass
-    if (this->quantum > 0)
+    if (quantum > 0)
     {
-        this->quantum--; // Remove one quantum
+        quantum--; // Remove one quantum
         return;          // Return, because we didn't need to switch.
     }
 
     // Reset the quantum
-    this->quantum = MAX_QUANTUM;
+    quantum = MAX_QUANTUM;
 
-    this->prevPID = this->curPID;
-    this->curPID++;
+    prevPID = curPID;
+    curPID++;
 
-    if (this->curPID >= this->pids)
+    if (curPID >= pids)
     {
-        this->curPID = 0;
+        curPID = 0;
     }
 
-    this->tasks[this->prevPID].state = QUEUED;
-    this->tasks[this->curPID].state = RUNNING;
+    tasks[prevPID].state = QUEUED;
+    tasks[curPID].state = RUNNING;
 
-    //printTasks();
-    //printf("\n");
-    //printf("Switch from PID %d to PID %d\n", this->prevPID, this->curPID);
-    // this->prevPID = this->curPID;
+    // printTasks();
+    // printf("\n");
+    // printf("Switch from PID %d to PID %d\n", this->prevPID, this->curPID);
+    //  this->prevPID = this->curPID;
 
     // Context switch
-    switchTask(&this->tasks[this->prevPID].regs, &this->tasks[this->curPID].regs);
+    switchTask(&tasks[prevPID].regs, &tasks[curPID].regs);
 }
 
-void Scheduler::makeProc(char name[16], void *entry)
+void sched_makeProc(char name[16], void *entry)
 {
-    this->tasks[this->pids].regs.rax = 0;
-    this->tasks[this->pids].regs.rbx = 0;
-    this->tasks[this->pids].regs.rcx = 0;
-    this->tasks[this->pids].regs.rdx = 0;
-    this->tasks[this->pids].regs.rsi = 0;
-    this->tasks[this->pids].regs.rdi = 0;
-    this->tasks[this->pids].regs.eflags = this->tasks[0].regs.eflags;
-    this->tasks[this->pids].regs.rip = (uint64_t)entry;
-    this->tasks[this->pids].regs.cr3 = this->tasks[0].regs.cr3;
-    this->tasks[this->pids].origStackAddr = (uint64_t)malloc(0x1000);
-    this->tasks[this->pids].regs.rsp = this->tasks[this->pids].origStackAddr + 0x1000;
+    tasks[pids].regs.rax = 0;
+    tasks[pids].regs.rbx = 0;
+    tasks[pids].regs.rcx = 0;
+    tasks[pids].regs.rdx = 0;
+    tasks[pids].regs.rsi = 0;
+    tasks[pids].regs.rdi = 0;
+    tasks[pids].regs.eflags = tasks[0].regs.eflags;
+    tasks[pids].regs.rip = (uint64_t)entry;
+    tasks[pids].regs.cr3 = tasks[0].regs.cr3;
+    tasks[pids].origStackAddr = (uint64_t)malloc(0x1000);
+    tasks[pids].regs.rsp = tasks[pids].origStackAddr + 0x1000;
 
-    this->tasks[this->pids].pid = this->pids;
-    this->tasks[this->pids].state = QUEUED;
+    tasks[pids].pid = pids;
+    tasks[pids].state = QUEUED;
 
     for (int i = 0; i < 16; i++)
-        this->tasks[this->pids].name[i] = name[i];
+        tasks[pids].name[i] = name[i];
 
-    this->pids++;
+    pids++;
 }
 
-void Scheduler::yield()
+void sched_yield()
 {
-    switchTask(&this->tasks[this->curPID].regs, &this->tasks[this->curPID + 1].regs);
+    switchTask(&tasks[curPID].regs, &tasks[curPID + 1].regs);
 }
 
-void Scheduler::delProc(uint16_t pid)
+void sched_delProc(uint16_t pid)
 {
-    free((void *)(this->tasks[pid].origStackAddr));
+    free((void *)(tasks[pid].origStackAddr));
 
-    for (int i = pid; i < this->pids; i++)
+    for (int i = pid; i < pids; i++)
     {
-        this->tasks[i] = this->tasks[i + 1];
-        this->tasks[i].pid--;
+        tasks[i] = tasks[i + 1];
+        tasks[i].pid--;
     }
 
-    this->pids--;
+    pids--;
 }
 
-uint16_t Scheduler::getCurPID()
+uint16_t sched_getCurPID()
 {
-    return this->curPID;
+    return curPID;
 }
 
-void Scheduler::delSelf()
+void sched_delSelf()
 {
-    this->delProc(this->getCurPID());
-    while(1);
+    sched_delProc(sched_getCurPID());
+    while (1)
+        ;
 }

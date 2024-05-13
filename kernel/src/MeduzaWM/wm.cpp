@@ -47,7 +47,6 @@ void WindowManager::update()
             MousePosition.Y >= window->y &&
             MousePosition.Y <= window->y + WIN_OFFSET)
         {
-            // Mouse is inside square
             if ((mouseButtonData & PS2Leftbutton))
             {
                 // Mouse left button is pressed
@@ -125,19 +124,21 @@ void WindowManager::draw()
     //this->img.draw(0, 0, GlobalRenderer->TargetFramebuffer->Width, GlobalRenderer->TargetFramebuffer->Height);
 
     //Draw taskbar
-    this->taskBar.draw();
+    //this->taskBar.draw();
 
     // Draw windows
     for (int i = this->windowSize - 1; i >= 0; i--)
     {
         if (this->windows[i] == NULL)
             continue;
+        if (this->windows[i]->pixels == NULL)
+            continue;
         drawWindow(this->windows[i]);
     }
 
     // Draw cursor
-    // GlobalRenderer->DrawOverlayMouseCursor(MousePointer, MousePosition, 0xffffffff);
-    this->mouseCur.draw(MousePosition.X, MousePosition.Y);
+    GlobalRenderer->DrawOverlayMouseCursor(MousePointer, MousePosition, 0xffffffff);
+    //this->mouseCur.draw(MousePosition.X, MousePosition.Y);
 
     // Flip buffers
     GlobalRenderer->FlipDB();
@@ -189,22 +190,22 @@ void WindowManager::deleteWindow(window_t *window)
         window->pixels = NULL;
     }
 
-    printf("%d\n", windowSize);
-
-    for (int i = 0; i < this->windowSize; i++)
+    for (int i = this->windowSize - 1; i >= 0; i--)
     {
         if (this->windows[i] == window)
         {
-            for (int j = i; j < this->windowSize - 1; j++)
-                this->windows[j] = this->windows[j + 1];
-            //this->windows[i] = NULL;
+            if (this->windowSize > 1)
+            {
+                for (int j = i; j < this->windowSize - 1; j++)
+                    this->windows[j] = this->windows[j + 1];
+            }
             this->windowSize--;
             break;
         }
     }
 
-    printf("%d\n", windowSize);
     free(window);
+    window = NULL;
 }
 
 void WindowManager::drawWindow(window_t *window)

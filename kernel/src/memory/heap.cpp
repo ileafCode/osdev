@@ -3,6 +3,8 @@
 #include "../paging/PageTableManager.h"
 #include "../paging/PageFrameAllocator.h"
 
+#if HEAP_IMPL == 0
+
 void *heapStart;
 void *heapEnd;
 HeapSegHdr *LastHdr;
@@ -40,7 +42,7 @@ void free(void *address)
 void *malloc(size_t size)
 {
     if (size % 0x10 > 0)
-    {
+    { // it is not a multiple of 0x10
         size -= (size % 0x10);
         size += 0x10;
     }
@@ -57,13 +59,11 @@ void *malloc(size_t size)
             {
                 currentSeg->Split(size);
                 currentSeg->free = false;
-                //printf("[%o3HEAP%oF]: Allocating memory of size %d\n", size);
                 return (void *)((uint64_t)currentSeg + sizeof(HeapSegHdr));
             }
             if (currentSeg->length == size)
             {
                 currentSeg->free = false;
-                //printf("[%o3HEAP%oF]: Allocating memory of size %d\n", size);
                 return (void *)((uint64_t)currentSeg + sizeof(HeapSegHdr));
             }
         }
@@ -71,7 +71,7 @@ void *malloc(size_t size)
             break;
         currentSeg = currentSeg->next;
     }
-    ExpandHeap(size);
+    //ExpandHeap(size);
     return malloc(size);
 }
 
@@ -82,16 +82,16 @@ HeapSegHdr *HeapSegHdr::Split(size_t splitLength)
     int64_t splitSegLength = length - splitLength - (sizeof(HeapSegHdr));
     if (splitSegLength < 0x10)
         return NULL;
-
+    
     HeapSegHdr *newSplitHdr = (HeapSegHdr *)((size_t)this + splitLength + sizeof(HeapSegHdr));
-    next->last = newSplitHdr;             // Set the next segment's last segment to our new segment
+    //next->last = newSplitHdr;             // Set the next segment's last segment to our new segment
+
     newSplitHdr->next = next;             // Set the new segment's next segment to out original next segment
     next = newSplitHdr;                   // Set our new segment to the new segment
     newSplitHdr->last = this;             // Set our new segment's last segment to the current segment
     newSplitHdr->length = splitSegLength; // Set the new header's length to the calculated value
     newSplitHdr->free = free;             // make sure the new segment's free is the same as the original
     length = splitLength;                 // set the length of the original segment to its new length
-
     if (LastHdr == this)
         LastHdr = newSplitHdr;
     return newSplitHdr;
@@ -134,10 +134,11 @@ void HeapSegHdr::CombineForward()
         LastHdr = this;
 
     if (next->next != NULL)
+    {
         next->next->last = this;
+    }
 
     length = length + next->length + sizeof(HeapSegHdr);
-    next = next->next;
 }
 
 void HeapSegHdr::CombineBackward()
@@ -145,3 +146,135 @@ void HeapSegHdr::CombineBackward()
     if (last != NULL && last->free)
         last->CombineForward();
 }
+
+#elif HEAP_IMPL == 1
+
+void *heap_start = NULL;
+
+// Function to initialize the heap
+void init_heap(void *start_address)
+{
+    heap_start = start_address;
+}
+
+// Function to allocate memory from the heap
+void *malloc(size_t size)
+{
+    // Make sure the heap is initialized
+    if (heap_start == NULL)
+    {
+        // Initialize the heap with a single page
+        heap_start = GlobalAllocator.RequestPage();
+        g_PageTableManager.MapMemory(heap_start, heap_start);
+    }
+
+    // Traverse the free list to find a suitable block
+    Node *prev = NULL;
+    Node *curr = (Node *)heap_start;
+    while (curr != NULL)
+    {
+        if (curr->size >= size)
+        {
+            // Split the block if it's larger than needed
+            if (curr->size > size + sizeof(Node))
+            {
+                Node *new_node = (Node *)((char *)curr + sizeof(Node) + size);
+                new_node->size = curr->size - size - sizeof(Node);
+                new_node->next = curr->next;
+                curr->size = size;
+                curr->next = new_node;
+            }
+
+            // Remove the block from the free list
+            if (prev != NULL)
+            {
+                prev->next = curr->next;
+            }
+            else
+            {
+                heap_start = curr->next;
+            }
+
+            // Return the address of the allocated block
+            return (char *)curr + sizeof(Node);
+        }
+        prev = curr;
+        curr = curr->next;
+    }
+
+    // No suitable block found, request a new page
+    void *new_page = GlobalAllocator.RequestPage();
+    g_PageTableManager.MapMemory(new_page, new_page);
+
+    // Add the new page to the free list and try again
+    Node *new_node = (Node *)new_page;
+    new_node->size = 0x1000 - sizeof(Node);
+    new_node->next = (Node *)heap_start;
+    heap_start = new_node;
+
+    return malloc(size);
+}
+
+// Function to free memory allocated by malloc
+void free(void *ptr)
+{
+    if (!ptr)
+        return;
+
+    Node *node = (Node *)((char *)ptr - sizeof(Node));
+    node->next = (Node *)heap_start;
+    heap_start = node;
+}
+
+// Optional function to allocate memory aligned to a specific boundary
+void *aligned_alloc(size_t alignment, size_t size)
+{
+    // Allocate extra memory to ensure alignment
+    size_t total_size = size + alignment - 1;
+
+    // Allocate memory and find a suitable aligned address
+    void *ptr = malloc(total_size);
+
+    if (ptr != NULL)
+    {
+        // Adjust the address to meet the alignment requirement
+        void *aligned_ptr = (void *)(((uintptr_t)ptr + alignment - 1) & ~(alignment - 1));
+
+        // Save the original pointer to free later
+        void *original_ptr = ptr;
+
+        // Calculate the offset and store it in the previous node
+        size_t offset = (char *)aligned_ptr - (char *)original_ptr;
+        Node *node = (Node *)((char *)ptr - sizeof(Node));
+        node->size -= offset;
+
+        // Return the aligned address
+        return aligned_ptr;
+    }
+
+    return NULL;
+}
+
+#else
+
+void *malloc(size_t size)
+{
+    if (size == 0)
+        return NULL;
+
+    if (size % 0x1000 > 0)
+    {
+        size -= size % 0x1000;
+        size += 0x1000;
+    }
+
+    size /= 0x1000;
+
+    return GlobalAllocator.RequestPage();
+}
+
+void free(void *address)
+{
+}
+
+#endif

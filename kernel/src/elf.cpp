@@ -56,11 +56,11 @@ void *elf_load(char name[8], uint8_t *bytes)
         if (shdr->sh_type == SHT_NOBITS)
             memset((char *)(shdr->sh_addr), 0x0, shdr->sh_size);
         else if (shdr->sh_addr != 0)
-            memcpy((char *)(shdr->sh_addr), (char *)((uint64_t)header + shdr->sh_offset), shdr->sh_size);
+            memcpy8((char *)(shdr->sh_addr), (char *)((uint64_t)header + shdr->sh_offset), shdr->sh_size);
     }
 
     //elf_program *out = (elf_program *)malloc(sizeof(elf_program));
-    //memcpy(out->name, name, 8);
+    //memcpy8(out->name, name, 8);
     //out->name[8] = '\0';
     //out->entryPoint = (uint64_t *)prog_entry;
     return (void *)prog_entry;

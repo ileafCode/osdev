@@ -84,7 +84,7 @@ char *strdup(const char *src)
 {
     int len = strlen(src) + 1;
     char *dst = (char *)malloc(len);
-    memcpy(dst, src, len);
+    memcpy8(dst, src, len);
     return dst;
 }
 
@@ -107,6 +107,15 @@ void *memcpy(void *__restrict b, const void *__restrict a, size_t n)
 {
     uint64_t *s1 = (uint64_t *)b;
     const uint64_t *s2 = (const uint64_t *)a;
+    for (; 0 < n; --n)
+        *s1++ = *s2++;
+    return b;
+}
+
+void *memcpy8(void *__restrict b, const void *__restrict a, size_t n)
+{
+    uint8_t *s1 = (uint8_t *)b;
+    const uint8_t *s2 = (const uint8_t *)a;
     for (; 0 < n; --n)
         *s1++ = *s2++;
     return b;
@@ -143,6 +152,20 @@ void *memset64(void *bufptr, uint64_t value, size_t size)
     for (size_t i = 0; i < size; i++)
         buf[i] = (uint64_t)value;
     return bufptr;
+}
+
+char *strchr(const char *p, int ch)
+{
+	char c;
+
+	c = ch;
+	for (;; ++p) {
+		if (*p == c)
+			return ((char *)p);
+		if (*p == '\0')
+			return (NULL);
+	}
+	/* NOTREACHED */
 }
 
 int strint(const char *str)

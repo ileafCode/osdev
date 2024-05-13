@@ -90,7 +90,7 @@ void apicInit(uint8_t *rsdt)
 
     g_PageTableManager.MapMemory((void *)ioapic_ptr, (void *)ioapic_ptr);
     g_PageTableManager.MapMemory((void *)lapic_ptr, (void *)lapic_ptr);
-    printf("IOAPIC pointer: %x\nLAPIC pointer: %x\nNumber of cores: %d\n", ioapic_ptr, lapic_ptr, numcore);
+    //printf("IOAPIC pointer: %x\nLAPIC pointer: %x\nNumber of cores: %d\n", ioapic_ptr, lapic_ptr, numcore);
 
     lapicOut(LAPIC_TPR, 0);
     lapicOut(LAPIC_DFR, 0xffffffff);

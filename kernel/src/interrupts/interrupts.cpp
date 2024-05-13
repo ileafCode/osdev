@@ -50,7 +50,7 @@ __attribute__((interrupt)) void PITInt_Handler(interrupt_frame *frame)
 {
     PIT::Tick();
     PIC_EndMaster();
-    GlobalScheduler->schedule();
+    sched_schedule();
 }
 
 void PIC_EndMaster()

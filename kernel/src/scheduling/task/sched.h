@@ -28,45 +28,23 @@ struct task
     uint16_t pid;   // Process ID
     char name[16];  // Process name
     int state;      // Can be RUNNING, QUEUED or KILL
-    //bool locked;    // Is locked
+    // bool locked;    // Is locked
 } __attribute__((packed));
 
-// Scheduler class
-class Scheduler
-{
-public:
-    // Constructor and destructor
-    Scheduler();
-    ~Scheduler();
-    // Prints out all tasks
-    void printTasks();
-    // Called every PIT (Programmable Interval Timer) interrupt
-    void schedule();
-    // Makes a process
-    void makeProc(char name[16], void *entry);
-    // Yields
-    void yield();
-    // Deletes a process
-    void delProc(uint16_t pid);
-    // Gets the current process ID
-    uint16_t getCurPID();
-    // Deletes itself
-    void delSelf();
+// Initializes the scheduler
+void sched_init();
 
-private:
-    // Decides how long a task can be run (ex. 5q = 50ms, 1q = 10ms, etc.)
-    int quantum = MAX_QUANTUM;
-    // How many processes are there
-    int pids = 1;
-    // Current process
-    uint16_t curPID = 0;
-    // Previous process
-    uint16_t prevPID = 0;
-    // Ticks since boot
-    uint64_t ticks = 0;
-    // All the tasks
-    task tasks[MAX_PROCESS];
-    //Vector<task> tasks;
-};
-
-extern Scheduler *GlobalScheduler;
+// Prints out all tasks
+void sched_printTasks();
+// Called every PIT (Programmable Interval Timer) interrupt
+void sched_schedule();
+// Makes a process
+void sched_makeProc(char name[16], void *entry);
+// Yields
+void sched_yield();
+// Deletes a process
+void sched_delProc(uint16_t pid);
+// Gets the current process ID
+uint16_t sched_getCurPID();
+// Deletes itself
+void sched_delSelf();

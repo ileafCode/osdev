@@ -1,6 +1,8 @@
 
 #include "image.h"
-#include "../fs/MeduzaFS.h"
+#include "../memory/heap.h"
+#include "../BasicRenderer.h"
+//#include "../fs/MeduzaFS.h"
 
 uint32_t *tga_parse(unsigned char *ptr, int size)
 {
@@ -144,13 +146,13 @@ uint32_t *tga_parse(unsigned char *ptr, int size)
 
 Image::Image(char *path)
 {
-    FILE *file = mfsOpenFile(path);
+    /*FILE *file = mfsOpenFile(path);
     if (file == NULL)
         return;
     this->imgPtr = tga_parse(file->data, file->sizeSector * 504);
     this->width = *(this->imgPtr);
     this->height = *(this->imgPtr + 1);
-    this->imgPtr += 2;
+    this->imgPtr += 2;*/
 }
 
 void Image::draw(int x, int y)

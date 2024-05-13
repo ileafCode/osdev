@@ -3,12 +3,15 @@
 #include "../memory/heap.h"
 #include "../paging/PageFrameAllocator.h"
 #include "../stdio/stdio.h"
+#include "../cstr.h"
 
 bool VFS_DISK::Read(uint64_t sector, uint32_t sectorCount, void *buffer)
 {
     if (this->name.portIdx != -1)
     {
-        g_ahciDriver->ports[this->name.portIdx]->Read(sector, sectorCount, buffer);
+        g_ahciDriver->ports[this->name.portIdx]->Read(sector, sectorCount, g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer);
+        memcpy8(buffer, g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer, sectorCount * 512);
+        //buffer = g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer;
         return 0;
     }
     else
@@ -22,7 +25,9 @@ bool VFS_DISK::Write(uint64_t sector, uint32_t sectorCount, void *buffer)
 {
     if (this->name.portIdx != -1)
     {
-        g_ahciDriver->ports[this->name.portIdx]->Write(sector, sectorCount, buffer);
+        memcpy8(g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer, buffer, sectorCount * 512);
+        g_ahciDriver->ports[this->name.portIdx]->Write(sector, sectorCount,
+            g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer);
         return 0;
     }
     else
@@ -61,6 +66,7 @@ void vfsMount(char name)
         }
     }
     printf("[%o9ERROR%oF]: { vfsMount(%c); } Could not find drive\n", name);
+    while(1);
 }
 
 void vfsUnmount()
@@ -70,7 +76,7 @@ void vfsUnmount()
 
 bool vfsWrite(uint64_t sector, uint32_t sectorCount, void *buffer)
 {
-    return vfs_disk->Write(sector, sectorCount, buffer);
+    return vfs_disk->Write(sector, sectorCount, g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer);
 }
 
 bool vfsRead(uint64_t sector, uint32_t sectorCount, void *buffer)

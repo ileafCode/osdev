@@ -56,7 +56,6 @@ namespace AHCI
             if (portsImplemented & (1 << i))
             {
                 PortType portType = CheckPortType(&ABAR->ports[i]);
-
                 if (portType == PortType::SATA || portType == PortType::SATAPI)
                 {
                     ports[portCount] = new Port();
