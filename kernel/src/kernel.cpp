@@ -226,10 +226,13 @@ $$/      $$/  $$$$$$$/  $$$$$$$/  $$$$$$/  $$$$$$$$/  $$$$$$$/  $$$$$$/   $$$$$$
     // FIL *file;
     // FRESULT res = f_open(file, "hello.txt", FA_CREATE_NEW);
 
-    FRESULT dirRes = f_mkdir("./dirTest");
+    //FRESULT dirRes = f_mkdir("./dirTest");
     // printf("%d\n", dirRes);
 
     char *cwd = (char *)malloc(100);
+
+    FIL *file;
+    FRESULT res = f_open(file, "hello.txt", FA_CREATE_NEW);
     while (true)
     {
         f_getcwd(cwd, 100);

@@ -7,7 +7,7 @@
 - [x] Basic ACPI support (no rebbot or shutdown)
 - [x] PCI
 - [x] AHCI from PCI
-- [x] Custom Filesystem (MeduzaFS)
+- [x] Actual FAT filesystem (FatFs)
 - [x] Syscalls
 - [x] Can run ELF programs
 
