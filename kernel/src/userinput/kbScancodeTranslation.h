@@ -12,6 +12,8 @@ namespace QWERTYKeyboard
 #define Caps 0x3A
 #define LeftControl 0x1D
 
-    extern const char ASCIITable[];
+    extern const char ASCII_table_cl[];
+    extern const char ASCII_table_shift[];
+    extern const char ASCII_table_lower[];
     char Translate(uint8_t scancode, bool uppercase, bool caps);
 }

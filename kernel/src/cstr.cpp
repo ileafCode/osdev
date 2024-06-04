@@ -1,5 +1,6 @@
 #include "cstr.h"
 #include "memory/heap.h"
+#include "stdio/stdio.h"
 
 size_t strlen(const char *str)
 {
@@ -117,7 +118,13 @@ void *memcpy8(void *__restrict b, const void *__restrict a, size_t n)
     uint8_t *s1 = (uint8_t *)b;
     const uint8_t *s2 = (const uint8_t *)a;
     for (; 0 < n; --n)
+    {
         *s1++ = *s2++;
+        //debug_printf("%x %x\n", *s1, *s2);
+        //s1++;
+        //s2++;
+    }
+    //debug_printf("\n");
     return b;
 }
 

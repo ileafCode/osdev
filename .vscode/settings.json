@@ -13,6 +13,19 @@
         "stdlib.h": "c",
         "cstdlib": "cpp",
         "initializer_list": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "optional": "cpp",
+        "system_error": "cpp",
+        "functional": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "syscall.h": "c",
+        "stddef.h": "c",
+        "bit": "cpp",
+        "concepts": "cpp",
+        "cstdio": "cpp",
+        "cwchar": "cpp",
+        "new": "cpp"
     }
 }

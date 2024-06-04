@@ -9,7 +9,7 @@
 // All 64-bit registers
 struct registers
 {
-    uint64_t rax, rbx, rcx, rdx, rsi, rdi, rsp, rbp, rip, eflags, cr3;
+    uint64_t rax, rbx, rcx, rdx, rsi, rdi, rsp, rbp, r8, rip, eflags, cr3;
 } __attribute__((packed));
 
 // Task states
@@ -28,18 +28,21 @@ struct task
     uint16_t pid;   // Process ID
     char name[16];  // Process name
     int state;      // Can be RUNNING, QUEUED or KILL
+    char *cwd;      // Process current working directory
     // bool locked;    // Is locked
 } __attribute__((packed));
 
+void sched_lock();
+void sched_unlock();
+
 // Initializes the scheduler
 void sched_init();
-
 // Prints out all tasks
 void sched_printTasks();
 // Called every PIT (Programmable Interval Timer) interrupt
-void sched_schedule();
+void sched_schedule(int chgTask = 1);
 // Makes a process
-void sched_makeProc(char name[16], void *entry);
+void sched_makeProc(char name[16], void *entry, int argc, char **argv);
 // Yields
 void sched_yield();
 // Deletes a process

@@ -42,7 +42,7 @@
 /* This option switches f_expand function. (0:Disable or 1:Enable) */
 
 
-#define FF_USE_CHMOD	1
+#define FF_USE_CHMOD	0
 /* This option switches attribute manipulation functions, f_chmod() and f_utime().
 /  (0:Disable or 1:Enable) Also FF_FS_READONLY needs to be 0 to enable this option. */
 
@@ -58,7 +58,7 @@
 
 #define FF_USE_STRFUNC	1
 #define FF_PRINT_LLI	1
-#define FF_PRINT_FLOAT	1
+#define FF_PRINT_FLOAT	0
 #define FF_STRF_ENCODE	3
 /* FF_USE_STRFUNC switches string functions, f_gets(), f_putc(), f_puts() and
 /  f_printf().
@@ -84,7 +84,7 @@
 / Locale and Namespace Configurations
 /---------------------------------------------------------------------------*/
 
-#define FF_CODE_PAGE 775
+#define FF_CODE_PAGE 437
 /* This option specifies the OEM code page to be used on the target system.
 /  Incorrect code page setting can cause a file open failure.
 /
@@ -113,7 +113,7 @@
 */
 
 
-#define FF_USE_LFN		3
+#define FF_USE_LFN		2
 #define FF_MAX_LFN		255
 /* The FF_USE_LFN switches the support for LFN (long file name).
 /
@@ -224,7 +224,7 @@
 / System Configurations
 /---------------------------------------------------------------------------*/
 
-#define FF_FS_TINY		0
+#define FF_FS_TINY		1
 /* This option switches tiny buffer configuration. (0:Normal or 1:Tiny)
 /  At the tiny configuration, size of file object (FIL) is shrinked FF_MAX_SS bytes.
 /  Instead of private sector buffer eliminated from the file object, common sector
@@ -240,7 +240,7 @@
 #define FF_FS_NORTC		0
 #define FF_NORTC_MON	1
 #define FF_NORTC_MDAY	1
-#define FF_NORTC_YEAR	2022
+#define FF_NORTC_YEAR	2024
 /* The option FF_FS_NORTC switches timestamp feature. If the system does not have
 /  an RTC or valid timestamp is not needed, set FF_FS_NORTC = 1 to disable the
 /  timestamp feature. Every object modified by FatFs will have a fixed timestamp
@@ -281,7 +281,7 @@
 /  module itself. Note that regardless of this option, file access to different
 /  volume is always re-entrant and volume control functions, f_mount(), f_mkfs()
 /  and f_fdisk() function, are always not re-entrant. Only file/directory access
-/  to the same volume is under control of this featuer.
+/  to the same volume is under control of this feature.
 /
 /   0: Disable re-entrancy. FF_FS_TIMEOUT have no effect.
 /   1: Enable re-entrancy. Also user provided synchronization handlers,

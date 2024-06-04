@@ -6,5 +6,5 @@
 #include <stddef.h>
 #include "../cstr.h"
 
-void puts(const char* str);
-void printf(const char* format, ...);
+int printf(const char *fmt, ...);
+int debug_printf(const char *fmt, ...);

@@ -43,6 +43,6 @@ namespace PIT
 
     void Tick()
     {
-        TimeSinceBoot += 1;
+        TimeSinceBoot += 0.001;
     }
 }

@@ -7,8 +7,16 @@
 
 __attribute__((interrupt)) void PageFault_Handler(interrupt_frame *frame)
 {
+    if (sched_getCurPID() != 0)
+    {
+        debug_printf("PAGE_FAULT: PID %d @ 0x%x\n", sched_getCurPID(), frame->rip);
+        sched_delSelf();
+        sched_schedule();
+    }
+
     asm("cli");
-    Panic("Page Fault Detected\n");
+    Panic("PAGE_FAULT in Kernel\n");
+    debug_printf("PAGE_FAULT in Kernel\n");
     printf("at %x\n", frame->rip);
     while (true)
         ;
@@ -16,17 +24,33 @@ __attribute__((interrupt)) void PageFault_Handler(interrupt_frame *frame)
 
 __attribute__((interrupt)) void DoubleFault_Handler(interrupt_frame *frame)
 {
+    if (sched_getCurPID() != 0)
+    {
+        debug_printf("DB_FAULT: PID %d @ 0x%x\n", sched_getCurPID(), frame->rip);
+        sched_delSelf();
+        sched_schedule();
+    }
+
     asm("cli");
-    Panic("Double Fault Detected\n");
+    Panic("DB_FAULT in Kernel\n");
+    debug_printf("DB_FAULT in Kernel\n");
     printf("at %x\n", frame->rip);
     while (true)
         ;
 }
 
-__attribute__((interrupt)) void GPFault_Handler(interrupt_frame *frame)
+__attribute__((interrupt)) void GPFault_Handler(interrupt_frame *frame, unsigned long int error)
 {
+    if (sched_getCurPID() != 0)
+    {
+        debug_printf("GP_FAULT: PID %d @ 0x%x, %d\n", sched_getCurPID(), frame->rip, error);
+        sched_delSelf();
+        sched_schedule();
+    }
+    
     asm("cli");
-    Panic("General Protection Fault Detected\n");
+    Panic("GP_FAULT in Kernel\n");
+    debug_printf("GP_FAULT in Kernel, Error: %d\n", error);
     printf("at %x\n", frame->rip);
     while (true)
         ;

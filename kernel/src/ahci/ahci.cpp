@@ -234,7 +234,6 @@ namespace AHCI
 
         while (true)
         {
-
             if ((hbaPort->commandIssue == 0))
                 break;
             if (hbaPort->interruptStatus & HBA_PxIS_TFES)
@@ -261,7 +260,6 @@ namespace AHCI
             port->buffer = (uint8_t *)GlobalAllocator.RequestPage();
             memset(port->buffer, 0, 0x1000);
         }
-        printf("[%oAAHCI%oF]: AHCI initialized\n");
     }
 
     AHCIDriver::~AHCIDriver()

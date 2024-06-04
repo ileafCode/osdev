@@ -154,7 +154,7 @@ void BasicRenderer::ClearChar()
     unsigned int yOff = cursorPos.Y;
 
     unsigned int *pixPtr = (unsigned int *)TargetFramebuffer->BaseAddress;
-    for (unsigned long y = yOff; y < yOff + 16; y++)
+    for (unsigned long y = yOff; y < yOff + PSF1_Font->psf1_Header->charsize; y++)
     {
         for (unsigned long x = xOff - 8; x < xOff; x++)
         {
@@ -167,7 +167,7 @@ void BasicRenderer::ClearChar()
     if (cursorPos.X < 0)
     {
         cursorPos.X = TargetFramebuffer->Width;
-        cursorPos.Y -= 16;
+        cursorPos.Y -= PSF1_Font->psf1_Header->charsize;
         if (cursorPos.Y < 0)
             cursorPos.Y = 0;
     }
@@ -176,7 +176,7 @@ void BasicRenderer::ClearChar()
 void BasicRenderer::Next()
 {
     cursorPos.X = 0;
-    cursorPos.Y += 16;
+    cursorPos.Y += PSF1_Font->psf1_Header->charsize;
 }
 
 void BasicRenderer::Print(const char *str)
@@ -189,7 +189,7 @@ void BasicRenderer::Print(const char *str)
         if (cursorPos.X + 8 > TargetFramebuffer->Width)
         {
             cursorPos.X = 0;
-            cursorPos.Y += 16;
+            cursorPos.Y += PSF1_Font->psf1_Header->charsize;
         }
         chr++;
     }
@@ -199,7 +199,7 @@ void BasicRenderer::PutChar(uint8_t chr, unsigned int xOff, unsigned int yOff)
 {
     unsigned int *pixPtr = (unsigned int *)TargetFramebuffer->BaseAddress;
     char *fontPtr = (char *)PSF1_Font->glyphBuffer + (chr * PSF1_Font->psf1_Header->charsize);
-    for (unsigned long y = yOff; y < yOff + 16; y++)
+    for (unsigned long y = yOff; y < yOff + PSF1_Font->psf1_Header->charsize; y++)
     {
         for (unsigned long x = xOff; x < xOff + 8; x++)
         {
@@ -215,7 +215,7 @@ void BasicRenderer::PutChar(uint8_t chr, unsigned int xOff, unsigned int yOff)
 void BasicRenderer::PutCharDB(uint8_t chr, unsigned int xOff, unsigned int yOff)
 {
     char *fontPtr = (char *)PSF1_Font->glyphBuffer + (chr * PSF1_Font->psf1_Header->charsize);
-    for (unsigned long y = yOff; y < yOff + 16; y++)
+    for (unsigned long y = yOff; y < yOff + PSF1_Font->psf1_Header->charsize; y++)
     {
         for (unsigned long x = xOff; x < xOff + 8; x++)
         {
@@ -230,7 +230,6 @@ void BasicRenderer::PutChar(uint8_t chr)
 {
     if (chr == 0)
         return;
-    outb(0xE9, chr);
     if (chr == '\n')
     {
         this->Next();
@@ -245,10 +244,10 @@ void BasicRenderer::PutChar(uint8_t chr)
     if (cursorPos.X + 8 > TargetFramebuffer->Width)
     {
         cursorPos.X = 0;
-        cursorPos.Y += 16;
+        cursorPos.Y += PSF1_Font->psf1_Header->charsize;
     }
 
-    if (cursorPos.Y + 16 > TargetFramebuffer->Height)
+    if (cursorPos.Y + PSF1_Font->psf1_Header->charsize > TargetFramebuffer->Height)
     {
         this->Clear();
         cursorPos.X = 0;

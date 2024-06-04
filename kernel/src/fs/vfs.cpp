@@ -10,13 +10,13 @@ bool VFS_DISK::Read(uint64_t sector, uint32_t sectorCount, void *buffer)
     if (this->name.portIdx != -1)
     {
         g_ahciDriver->ports[this->name.portIdx]->Read(sector, sectorCount, g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer);
-        memcpy8(buffer, g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer, sectorCount * 512);
+        memcpy8(buffer, g_ahciDriver->ports[this->name.portIdx]->buffer, sectorCount * 512);
         //buffer = g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer;
         return 0;
     }
     else
     {
-        printf("[%o9ERROR%oF]: { VFS_DISK::Read(%d, %d, %x); } Disk is not mounted\n", sector, sectorCount, (uint64_t *)buffer);
+        printf("[ERROR]: { VFS_DISK::Read(%d, %d, %x); } Disk is not mounted\n", sector, sectorCount, (uint64_t *)buffer);
         return 1; // Error
     }
 }
@@ -25,14 +25,14 @@ bool VFS_DISK::Write(uint64_t sector, uint32_t sectorCount, void *buffer)
 {
     if (this->name.portIdx != -1)
     {
-        memcpy8(g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer, buffer, sectorCount * 512);
+        memcpy8(g_ahciDriver->ports[this->name.portIdx]->buffer, buffer, sectorCount * 512);
         g_ahciDriver->ports[this->name.portIdx]->Write(sector, sectorCount,
-            g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer);
+            g_ahciDriver->ports[this->name.portIdx]->buffer);
         return 0;
     }
     else
     {
-        printf("[%o9ERROR%oF]: { VFS_DISK::Write(%d, %d, %x); } Disk is not mounted\n", sector, sectorCount, (uint64_t *)buffer);
+        printf("[ERROR]: { VFS_DISK::Write(%d, %d, %x); } Disk is not mounted\n", sector, sectorCount, (uint64_t *)buffer);
         return 1; // Error
     }
 }
@@ -45,7 +45,7 @@ void vfsAddDisk(char name)
 {
     if (drvNameIdx > 26)
     {
-        printf("[%o9ERROR%oF]: { vfsAddDisk(%c); } Too many drives\n", name);
+        printf("[ERROR]: { vfsAddDisk(%c); } Too many drives\n", name);
         return;
     }
     names[drvNameIdx].name = name;
@@ -65,7 +65,7 @@ void vfsMount(char name)
             return;
         }
     }
-    printf("[%o9ERROR%oF]: { vfsMount(%c); } Could not find drive\n", name);
+    printf("[ERROR]: { vfsMount(%c); } Could not find drive\n", name);
     while(1);
 }
 

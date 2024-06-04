@@ -9,5 +9,5 @@ void Panic(const char *panicMessage)
 
     GlobalRenderer->cursorPos = {0, 0};
 
-    printf("%o9[ERROR]%oF: KERNEL_PANIC\n%o9[REASON]%oF: %s", panicMessage);
+    printf("%v9[ERROR]%vF: KERNEL_PANIC\n%v9[REASON]%vF: %s", panicMessage);
 }

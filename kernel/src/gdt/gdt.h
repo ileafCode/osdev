@@ -16,12 +16,16 @@ struct GDTEntry {
 }__attribute__((packed));
 
 struct GDT {
-    GDTEntry Null; //0x00
-    GDTEntry KernelCode; //0x08
-    GDTEntry KernelData; //0x10
-    GDTEntry UserNull;
-    GDTEntry UserCode;
-    GDTEntry UserData;
+    GDTEntry Null; // 0x00
+    GDTEntry KernelCode; // 0x08
+    GDTEntry KernelData; // 0x10
+    GDTEntry UserNull; // 0x18
+    GDTEntry UserData; // 0x20
+    GDTEntry UserCode; // 0x28
+    GDTEntry OVMFData; // 0x30
+    GDTEntry OVMFCode; // 0x38
+    GDTEntry TSS_Low;  // 0x40
+    GDTEntry TSS_High; // 0x48
 } __attribute__((packed)) 
 __attribute((aligned(0x1000)));
 

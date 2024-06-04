@@ -8,7 +8,7 @@ CC = gcc
 ASMC = nasm
 LD = ld
 
-CFLAGS = -ffreestanding -nostdlib -fshort-wchar -mno-red-zone -fno-exceptions -msse
+CFLAGS = -ffreestanding -nostdlib -mno-red-zone -fno-exceptions
 ASMFLAGS = 
 LDFLAGS = -T $(LDS) -static -Bsymbolic -nostdlib
 
@@ -73,6 +73,8 @@ buildimg:
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/zap-ext-light24.psf ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/zap-light16.psf ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/zap-vga16.psf ::
+	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/utFont.psf ::
+	mcopy -i $(BUILDDIR)/$(OSNAME).img ../user_prog/bin/init ::
 
 run:
 	qemu-system-x86_64 -device sb16 -debugcon stdio -cpu host -accel kvm -soundhw pcspk -machine q35 -drive file=$(BUILDDIR)/$(OSNAME).img -m 2G -drive if=pflash,format=raw,unit=0,file="$(OVMFDIR)/OVMF_CODE-pure-efi.fd",readonly=on -drive if=pflash,format=raw,unit=1,file="$(OVMFDIR)/OVMF_VARS-pure-efi.fd" -net none

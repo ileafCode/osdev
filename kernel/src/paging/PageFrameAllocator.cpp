@@ -1,4 +1,5 @@
 #include "PageFrameAllocator.h"
+#include "../scheduling/task/sched.h"
 
 uint64_t freeMemory;
 uint64_t reservedMemory;
@@ -69,7 +70,7 @@ void *PageFrameAllocator::RequestPage()
         LockPage((void *)(pageBitmapIndex * 4096));
         return (void *)(pageBitmapIndex * 4096);
     }
-
+    
     return NULL; // Page Frame Swap to file
 }
 
@@ -77,7 +78,9 @@ void PageFrameAllocator::FreePage(void *address)
 {
     uint64_t index = (uint64_t)address / 4096;
     if (PageBitmap[index] == false)
-        return;
+    {
+        return; 
+    }
     if (PageBitmap.Set(index, false))
     {
         freeMemory += 4096;

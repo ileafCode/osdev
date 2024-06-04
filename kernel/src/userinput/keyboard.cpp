@@ -1,9 +1,10 @@
 #include "keyboard.h"
 #include "../paging/PageFrameAllocator.h"
 #include "../IO.h"
+#include "../stdio/stdio.h"
 
 static char *buffer;
-//static char* tempBuffer;
+static char *tempBuffer;
 int bufferIdx = 0;
 char last_ch = 0;
 uint8_t lastScancode = 0;
@@ -16,13 +17,16 @@ bool isRightShiftPressed = false;
 
 bool isCapsEnabled = false;
 
+bool IsShift() { return isLeftShiftPressed | isRightShiftPressed; }
+bool IsCaps() { return isCapsEnabled; };
+
 void PrepareKeyboard()
 {
     buffer = (char *)malloc(512);
     memset(buffer, 0, 512);
 
-    //tempBuffer = (char *)malloc(512);
-    //memset(tempBuffer, 0, 512);
+    tempBuffer = (char *)malloc(512);
+    memset(tempBuffer, 0, 512);
 }
 
 // Used differently
@@ -30,8 +34,10 @@ uint8_t lastSC = 0;
 
 void HandleKeyboard(uint8_t scancode)
 {
-    if (inb(0x64) & 0x20) return;
-    while (inb(0x64) & 2);
+    if (inb(0x64) & 0x20)
+        return;
+    while (inb(0x64) & 2)
+        ;
     lastScancode = scancode;
 
     if (!isKeyboardEnabled)
@@ -39,6 +45,8 @@ void HandleKeyboard(uint8_t scancode)
 
     switch (scancode)
     {
+    case 0x3B:
+        break;
     case LeftShift:
         isLeftShiftPressed = true;
         return;
@@ -65,7 +73,8 @@ void HandleKeyboard(uint8_t scancode)
         return;
     case BackSpace:
         last_ch = '\b';
-        if (bufferIdx == 0) return;
+        if (bufferIdx == 0)
+            return;
         if (isBufferEnabled)
         {
             bufferIdx--;
@@ -84,7 +93,7 @@ void HandleKeyboard(uint8_t scancode)
     switch (lastSC)
     {
     case LeftControl:
-        if (scancode == 0x2E) // 'C'
+        if (scancode == 0x2E)            // 'C'
             GlobalRenderer->Print("^C"); // Force close
         lastSC = 0;
         return;
@@ -129,18 +138,18 @@ char *KeyboardGetStr()
     isKeyboardEnabled = true;
     isBufferEnabled = true;
 
-    while (last_ch != '\n');
-    last_ch = 0;
+    while (last_ch != '\n')
+        ;
+    last_ch = '\0';
 
-    //for (int i = 0; i < 512; i++) {
-    //    tempBuffer[i] = buffer[i];
-    //}
+    for (int i = 0; i < 512; i++)
+        tempBuffer[i] = buffer[i];
 
-    //memset(buffer, 0, 512);
-    
+    memset(buffer, 0, 512);
+
     bufferIdx = 0;
 
     isBufferEnabled = false;
     isKeyboardEnabled = false;
-    return buffer;
+    return tempBuffer;
 }

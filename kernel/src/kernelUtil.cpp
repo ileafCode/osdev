@@ -11,7 +11,6 @@
 #include "apic/apic.h"
 #include "scheduling/task/sched.h"
 #include "scheduling/pit/pit.h"
-#include "MeduzaWM/wm.h"
 
 KernelInfo kernelInfo;
 
@@ -67,28 +66,17 @@ void PrepareInterrupts()
     SetIDTGate((void *)MouseInt_Handler, 0x2C, IDT_TA_InterruptGate, 0x08);
     SetIDTGate((void *)PITInt_Handler, 0x20, IDT_TA_InterruptGate, 0x08);
 
-    SetIDTGate((void *)Syscall0, 0x80, IDT_TA_InterruptGate, 0x08);
-    SetIDTGate((void *)Syscall1, 0x81, IDT_TA_InterruptGate, 0x08);
-    SetIDTGate((void *)Syscall2, 0x82, IDT_TA_InterruptGate, 0x08);
-    SetIDTGate((void *)Syscall3, 0x83, IDT_TA_InterruptGate, 0x08);
-    SetIDTGate((void *)Syscall4, 0x84, IDT_TA_InterruptGate, 0x08);
-    SetIDTGate((void *)Syscall5, 0x85, IDT_TA_InterruptGate, 0x08);
-    SetIDTGate((void *)Syscall6, 0x86, IDT_TA_InterruptGate, 0x08);
+    SetIDTGate((void *)Syscall0x80, 0x80, IDT_TA_InterruptGate, 0x08);
 
     asm("lidt %0" : : "m"(idtr));
 
     RemapPIC();
-
-    printf("[%oBIDT%oF]: IDT initialized\n");
 }
 
 void PrepareACPI(BootInfo *bootInfo)
 {
-    printf("[%o6ACPI%oF]: Finding XSDT table...\n");
     ACPI::SDTHeader *xsdt = (ACPI::SDTHeader *)(bootInfo->rsdp->XSDTAddress);
-    printf("[%o6ACPI%oF]: Finding MCFG table...\n");
     ACPI::MCFGHeader *mcfg = (ACPI::MCFGHeader *)ACPI::FindTable(xsdt, (char *)"MCFG");
-    printf("[%o6ACPI%oF]: Enumerating through PCI...\n");
     PCI::EnumeratePCI(mcfg);
     apicInit((uint8_t*)bootInfo->rsdp->XSDTAddress);
 }
@@ -109,22 +97,16 @@ KernelInfo InitializeKernel(BootInfo *bootInfo)
     LoadGDT(&gdtDescriptor);
 
     PrepareMemory(bootInfo);
-    printf("[%oEMEM%oF]: Paging initialized\n");
 
 #if HEAP_IMPL == 0
-    InitializeHeap((void *)0x100000000000, (GlobalAllocator.GetFreeRAM() / 0x1000) / 3);
+    InitializeHeap((void *)0x100000000000, (GlobalAllocator.GetFreeRAM() / 0x1000) / 2);
 #elif HEAP_IMPL == 1
-    init_heap(GlobalAllocator.RequestPage());
+    init_heap((void *)0x100000000000, (GlobalAllocator.GetFreeRAM() / 0x1000) / 2);
 #else
 #endif
-
     PrepareInterrupts();
-
     InitPS2Mouse();
-    printf("[%o5PS2%oF]: Mouse initialized\n");
-
     PrepareKeyboard();
-    printf("[%o5PS2%oF]: Keyboard initialized\n");
 
     outb(PIC1_DATA, 0b11111000);
     outb(PIC2_DATA, 0b11101111);

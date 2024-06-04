@@ -81,8 +81,13 @@ DRESULT disk_write (
 )
 {
 	DRESULT res = RES_OK;
-	bool x = vfsWrite(sector, count, (void *)buff);
+	//bool x = vfsWrite(sector, count, (void *)buff);
+	memcpy8(g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer, buff, 512);
+    bool x = !g_ahciDriver->ports[vfs_disk->name.portIdx]->Write(sector, count,
+        g_ahciDriver->ports[vfs_disk->name.portIdx]->buffer);
+	
 	if (x) res = RES_ERROR;
+	return res;
 }
 
 #endif
@@ -93,7 +98,7 @@ DRESULT disk_write (
 /*-----------------------------------------------------------------------*/
 
 DRESULT disk_ioctl (
-	BYTE pdrv,		/* Physical drive nmuber (0..) */
+	BYTE pdrv,		/* Physical drive number (0..) */
 	BYTE cmd,		/* Control code */
 	void *buff		/* Buffer to send/receive control data */
 )
@@ -105,9 +110,10 @@ DRESULT disk_ioctl (
 uint32_t get_fattime()
 {
 	time_t time = rtcGetTime();
-	return (DWORD)(time.year - 80) << 25 |
-           (DWORD)(time.month + 1) << 21 |
-           (DWORD)time.weekday << 16 |
+
+	return (DWORD)(time.year + 20) << 25 |
+           (DWORD)(time.month) << 21 |
+           (DWORD)time.dayOfMonth << 16 |
            (DWORD)time.hour << 11 |
            (DWORD)time.minute << 5 |
            (DWORD)time.second >> 1;

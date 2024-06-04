@@ -4229,6 +4229,10 @@ static FRESULT validate(			  /* Returns FR_OK or FR_INVALID_OBJECT */
 )
 {
 	FRESULT res = FR_INVALID_OBJECT;
+	//obj->fs = FatFs[0];
+	//obj->fs = (FATFS *)0x1ba20;
+
+	//debug_printf("OBJ: %X\nOBJ->FS: %X\n", obj, obj->fs);
 
 	if (obj && obj->fs && obj->fs->fs_type && obj->id == obj->fs->id)
 	{ /* Test if the object is valid */
@@ -4275,6 +4279,7 @@ FRESULT f_mount(
 	BYTE opt		   /* Mount option: 0=Do not mount (delayed mount), 1=Mount immediately */
 )
 {
+	
 	FATFS *cfs;
 	int vol;
 	FRESULT res;
@@ -4565,7 +4570,7 @@ FRESULT f_open(
 
 	if (res != FR_OK)
 		fp->obj.fs = 0; /* Invalidate file object on error */
-		
+	
 	LEAVE_FF(fs, res);
 	// return res;
 }
@@ -4581,6 +4586,7 @@ FRESULT f_read(
 	UINT *br	/* Number of bytes read */
 )
 {
+	static int count = 0;
 	FRESULT res;
 	FATFS *fs;
 	DWORD clst;
@@ -4588,9 +4594,10 @@ FRESULT f_read(
 	FSIZE_t remain;
 	UINT rcnt, cc, csect;
 	BYTE *rbuff = (BYTE *)buff;
-
+	
 	*br = 0;					   /* Clear read byte counter */
 	res = validate(&fp->obj, &fs); /* Check validity of the file object */
+	
 	if (res != FR_OK || (res = (FRESULT)fp->err) != FR_OK)
 		LEAVE_FF(fs, res); /* Check validity */
 	if (!(fp->flag & FA_READ))
@@ -4686,7 +4693,7 @@ FRESULT f_read(
 		memcpy8(rbuff, fp->buf + fp->fptr % SS(fs), rcnt); /* Extract partial sector */
 #endif
 	}
-
+	count++;
 	LEAVE_FF(fs, FR_OK);
 }
 
@@ -4834,7 +4841,6 @@ FRESULT f_write(
 	}
 
 	fp->flag |= FA_MODIFIED; /* Set file change flag */
-
 	LEAVE_FF(fs, FR_OK);
 }
 
@@ -4984,6 +4990,7 @@ FRESULT f_chdir(
 	const TCHAR *path /* Pointer to the directory path */
 )
 {
+	static int times = 0;
 #if FF_STR_VOLUME_ID == 2
 	UINT i;
 #endif
@@ -5049,7 +5056,7 @@ FRESULT f_chdir(
 		}
 #endif
 	}
-
+	times++;
 	LEAVE_FF(fs, res);
 }
 

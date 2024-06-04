@@ -2,6 +2,7 @@
 #include "../stdio/stdio.h"
 #include "../paging/PageTableManager.h"
 #include "../paging/PageFrameAllocator.h"
+#include "../scheduling/task/sched.h"
 
 #if HEAP_IMPL == 0
 
@@ -41,6 +42,7 @@ void free(void *address)
 
 void *malloc(size_t size)
 {
+    sched_lock();
     if (size % 0x10 > 0)
     { // it is not a multiple of 0x10
         size -= (size % 0x10);
@@ -59,11 +61,13 @@ void *malloc(size_t size)
             {
                 currentSeg->Split(size);
                 currentSeg->free = false;
+                sched_unlock();
                 return (void *)((uint64_t)currentSeg + sizeof(HeapSegHdr));
             }
             if (currentSeg->length == size)
             {
                 currentSeg->free = false;
+                sched_unlock();
                 return (void *)((uint64_t)currentSeg + sizeof(HeapSegHdr));
             }
         }
@@ -71,7 +75,7 @@ void *malloc(size_t size)
             break;
         currentSeg = currentSeg->next;
     }
-    //ExpandHeap(size);
+    ExpandHeap(size);
     return malloc(size);
 }
 
@@ -82,9 +86,9 @@ HeapSegHdr *HeapSegHdr::Split(size_t splitLength)
     int64_t splitSegLength = length - splitLength - (sizeof(HeapSegHdr));
     if (splitSegLength < 0x10)
         return NULL;
-    
+
     HeapSegHdr *newSplitHdr = (HeapSegHdr *)((size_t)this + splitLength + sizeof(HeapSegHdr));
-    //next->last = newSplitHdr;             // Set the next segment's last segment to our new segment
+    next->last = newSplitHdr; // Set the next segment's last segment to our new segment
 
     newSplitHdr->next = next;             // Set the new segment's next segment to out original next segment
     next = newSplitHdr;                   // Set our new segment to the new segment
@@ -149,132 +153,150 @@ void HeapSegHdr::CombineBackward()
 
 #elif HEAP_IMPL == 1
 
-void *heap_start = NULL;
+MemorySegmentHeader *FirstFreeMemorySegment;
 
-// Function to initialize the heap
-void init_heap(void *start_address)
+void init_heap(void *heapAddress, uint64_t pageCount)
 {
-    heap_start = start_address;
+    void *pos = heapAddress;
+
+    for (size_t i = 0; i < pageCount; i++)
+    {
+        g_PageTableManager.MapMemory(pos, GlobalAllocator.RequestPage());
+        pos = (void *)((size_t)pos + 0x1000);
+    }
+
+    size_t heapLength = pageCount * 0x1000;
+
+    FirstFreeMemorySegment = (MemorySegmentHeader *)heapAddress;
+	FirstFreeMemorySegment->MemoryLength = heapLength - sizeof(MemorySegmentHeader);
+	FirstFreeMemorySegment->NextSegment = 0;
+	FirstFreeMemorySegment->PreviousSegment = 0;
+	FirstFreeMemorySegment->NextFreeSegment = 0;
+	FirstFreeMemorySegment->PreviousFreeSegment = 0;
+	FirstFreeMemorySegment->Free = true;
 }
 
-// Function to allocate memory from the heap
+void CombineFreeSegments(MemorySegmentHeader *a, MemorySegmentHeader *b)
+{
+	if (a == 0)
+		return;
+	if (b == 0)
+		return;
+	if (a < b)
+	{
+		a->MemoryLength += b->MemoryLength + sizeof(MemorySegmentHeader);
+		a->NextSegment = b->NextSegment;
+		a->NextFreeSegment = b->NextFreeSegment;
+		b->NextSegment->PreviousSegment = a;
+		b->NextSegment->PreviousFreeSegment = a;
+		b->NextFreeSegment->PreviousFreeSegment = a;
+	}
+	else
+	{
+		b->MemoryLength += a->MemoryLength + sizeof(MemorySegmentHeader);
+		b->NextSegment = a->NextSegment;
+		b->NextFreeSegment = a->NextFreeSegment;
+		a->NextSegment->PreviousSegment = b;
+		a->NextSegment->PreviousFreeSegment = b;
+		a->NextFreeSegment->PreviousFreeSegment = b;
+	}
+}
+
 void *malloc(size_t size)
 {
-    // Make sure the heap is initialized
-    if (heap_start == NULL)
-    {
-        // Initialize the heap with a single page
-        heap_start = GlobalAllocator.RequestPage();
-        g_PageTableManager.MapMemory(heap_start, heap_start);
-    }
+    uint64_t remainder = size % 8;
+    size -= remainder;
+    if (remainder != 0)
+        size += 8;
 
-    // Traverse the free list to find a suitable block
-    Node *prev = NULL;
-    Node *curr = (Node *)heap_start;
-    while (curr != NULL)
+    MemorySegmentHeader *currentMemorySegment = FirstFreeMemorySegment;
+
+    while (true)
     {
-        if (curr->size >= size)
+        if (currentMemorySegment->MemoryLength >= size)
         {
-            // Split the block if it's larger than needed
-            if (curr->size > size + sizeof(Node))
+            if (currentMemorySegment->MemoryLength > size + sizeof(MemorySegmentHeader))
             {
-                Node *new_node = (Node *)((char *)curr + sizeof(Node) + size);
-                new_node->size = curr->size - size - sizeof(Node);
-                new_node->next = curr->next;
-                curr->size = size;
-                curr->next = new_node;
-            }
+                MemorySegmentHeader *newSegmentHeader = (MemorySegmentHeader *)((uint64_t)currentMemorySegment + sizeof(MemorySegmentHeader) + size);
 
-            // Remove the block from the free list
-            if (prev != NULL)
-            {
-                prev->next = curr->next;
-            }
-            else
-            {
-                heap_start = curr->next;
-            }
+                newSegmentHeader->Free = true;
+                newSegmentHeader->MemoryLength = ((uint64_t)currentMemorySegment->MemoryLength) - (sizeof(MemorySegmentHeader) + size);
+                newSegmentHeader->NextFreeSegment = currentMemorySegment->NextFreeSegment;
+                newSegmentHeader->NextSegment = currentMemorySegment->NextSegment;
+                newSegmentHeader->PreviousSegment = currentMemorySegment;
+                newSegmentHeader->PreviousFreeSegment = currentMemorySegment->PreviousFreeSegment;
 
-            // Return the address of the allocated block
-            return (char *)curr + sizeof(Node);
+                currentMemorySegment->NextFreeSegment = newSegmentHeader;
+                currentMemorySegment->NextSegment = newSegmentHeader;
+                currentMemorySegment->MemoryLength = size;
+            }
+            if (currentMemorySegment == FirstFreeMemorySegment)
+            {
+                FirstFreeMemorySegment = currentMemorySegment->NextFreeSegment;
+            }
+            currentMemorySegment->Free = false;
+
+            if (currentMemorySegment->PreviousFreeSegment != 0)
+                currentMemorySegment->PreviousFreeSegment->NextFreeSegment = currentMemorySegment->NextFreeSegment;
+            if (currentMemorySegment->NextFreeSegment != 0)
+                currentMemorySegment->NextFreeSegment->PreviousFreeSegment = currentMemorySegment->PreviousFreeSegment;
+            //if (currentMemorySegment->PreviousSegment != 0)
+            //    currentMemorySegment->PreviousSegment->NextFreeSegment = currentMemorySegment->NextFreeSegment;
+            if (currentMemorySegment->NextSegment != 0)
+                currentMemorySegment->NextSegment->PreviousFreeSegment = currentMemorySegment->PreviousFreeSegment;
+            
+            return currentMemorySegment + 1;
         }
-        prev = curr;
-        curr = curr->next;
+        if (currentMemorySegment->NextFreeSegment == 0)
+        {
+            return 0; // No memory remaining
+        }
+        currentMemorySegment = currentMemorySegment->NextFreeSegment;
     }
-
-    // No suitable block found, request a new page
-    void *new_page = GlobalAllocator.RequestPage();
-    g_PageTableManager.MapMemory(new_page, new_page);
-
-    // Add the new page to the free list and try again
-    Node *new_node = (Node *)new_page;
-    new_node->size = 0x1000 - sizeof(Node);
-    new_node->next = (Node *)heap_start;
-    heap_start = new_node;
-
-    return malloc(size);
+    return 0; // we should never get here
 }
 
 // Function to free memory allocated by malloc
 void free(void *ptr)
 {
-    if (!ptr)
-        return;
+    MemorySegmentHeader *currentMemorySegment;
 
-    Node *node = (Node *)((char *)ptr - sizeof(Node));
-    node->next = (Node *)heap_start;
-    heap_start = node;
-}
+	AlignedMemorySegmentHeader *AMSH = (AlignedMemorySegmentHeader *)ptr - 1;
+	if (AMSH->IsAligned)
+	{
+		currentMemorySegment = (MemorySegmentHeader *)(uint64_t)AMSH->MemorySegmentHeaderAddress;
+	}
+	else
+	{
+		currentMemorySegment = ((MemorySegmentHeader *)ptr) - 1;
+	}
+	currentMemorySegment->Free = true;
 
-// Optional function to allocate memory aligned to a specific boundary
-void *aligned_alloc(size_t alignment, size_t size)
-{
-    // Allocate extra memory to ensure alignment
-    size_t total_size = size + alignment - 1;
+	if (currentMemorySegment < FirstFreeMemorySegment)
+		FirstFreeMemorySegment = currentMemorySegment;
 
-    // Allocate memory and find a suitable aligned address
-    void *ptr = malloc(total_size);
-
-    if (ptr != NULL)
-    {
-        // Adjust the address to meet the alignment requirement
-        void *aligned_ptr = (void *)(((uintptr_t)ptr + alignment - 1) & ~(alignment - 1));
-
-        // Save the original pointer to free later
-        void *original_ptr = ptr;
-
-        // Calculate the offset and store it in the previous node
-        size_t offset = (char *)aligned_ptr - (char *)original_ptr;
-        Node *node = (Node *)((char *)ptr - sizeof(Node));
-        node->size -= offset;
-
-        // Return the aligned address
-        return aligned_ptr;
-    }
-
-    return NULL;
-}
-
-#else
-
-void *malloc(size_t size)
-{
-    if (size == 0)
-        return NULL;
-
-    if (size % 0x1000 > 0)
-    {
-        size -= size % 0x1000;
-        size += 0x1000;
-    }
-
-    size /= 0x1000;
-
-    return GlobalAllocator.RequestPage();
-}
-
-void free(void *address)
-{
+	if (currentMemorySegment->NextFreeSegment != 0)
+	{
+		if (currentMemorySegment->NextFreeSegment->PreviousFreeSegment < currentMemorySegment)
+			currentMemorySegment->NextFreeSegment->PreviousFreeSegment = currentMemorySegment;
+	}
+	if (currentMemorySegment->PreviousFreeSegment != 0)
+	{
+		if (currentMemorySegment->PreviousFreeSegment->NextFreeSegment > currentMemorySegment)
+			currentMemorySegment->PreviousFreeSegment->NextFreeSegment = currentMemorySegment;
+	}
+	/*if (currentMemorySegment->NextSegment != 0)
+	{
+		currentMemorySegment->NextSegment->PreviousSegment = currentMemorySegment;
+		if (currentMemorySegment->NextSegment->Free)
+			CombineFreeSegments(currentMemorySegment, currentMemorySegment->NextSegment);
+	}*/
+	if (currentMemorySegment->PreviousSegment != 0)
+	{
+		currentMemorySegment->PreviousSegment->NextSegment = currentMemorySegment;
+		if (currentMemorySegment->PreviousSegment->Free)
+			CombineFreeSegments(currentMemorySegment, currentMemorySegment->PreviousSegment);
+	}
 }
 
 #endif

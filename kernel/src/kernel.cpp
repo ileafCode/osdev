@@ -1,16 +1,11 @@
 #include "kernelUtil.h"
 #include "scheduling/pit/pit.h"
 #include "stdio/stdio.h"
-// #include "fs/MeduzaFS.h"
-// #include "fs/fat.h"
-
 #include "fs/fat/ff.h"
-
 #include "elf.h"
 #include "fs/vfs.h"
 #include "cstr.h"
 #include "scheduling/task/sched.h"
-#include "MeduzaWM/wm.h"
 #include "cmos/cmos.h"
 
 FRESULT list_dir(const char *path)
@@ -19,6 +14,8 @@ FRESULT list_dir(const char *path)
     DIR dir;
     FILINFO fno;
     int nfile, ndir;
+
+    printf("%-10s Time Type  %-25s Size (bytes)\n", "Date", "Name");
 
     res = f_opendir(&dir, path);
     if (res == FR_OK)
@@ -31,18 +28,26 @@ FRESULT list_dir(const char *path)
                 break;
             if (fno.fattrib & AM_DIR)
             {
-                uint32_t year = ((fno.fdate >> 9) & 0x7F) + 1980;
-                uint8_t month = ((fno.fdate >> 5) & 0x0F);
-                uint8_t day = ((fno.fdate) & 0x1F);
-                printf("%d/%d/%d <DIR> %s\n", day, month, year, fno.fname);
+                int year = ((fno.fdate >> 9) & 0x7F) + 1980;
+                int month = ((fno.fdate >> 5) & 0x0F);
+                int day = ((fno.fdate) & 0x1F);
+
+                int hour = ((fno.ftime >> 11));
+                int minute = ((fno.ftime >> 5) & 0x1F);
+
+                printf("%02d/%02d/%d %d:%02d <DIR> %-25s --\n", day, month, year, hour, minute, fno.fname);
                 ndir++;
             }
             else
             {
-                uint32_t year = ((fno.fdate >> 9) & 0x7F) + 1980;
-                uint8_t month = ((fno.fdate >> 5) & 0x0F);
-                uint8_t day = ((fno.fdate) & 0x1F);
-                printf("%d/%d/%d <FILE> %s\n", day, month, year, fno.fname);
+                int year = ((fno.fdate >> 9) & 0x7F) + 1980;
+                int month = ((fno.fdate >> 5) & 0x0F);
+                int day = ((fno.fdate) & 0x1F);
+
+                int hour = ((fno.ftime >> 11));
+                int minute = ((fno.ftime >> 5) & 0x1F);
+
+                printf("%02d/%02d/%d %d:%02d <FIL> %-25s %d\n", day, month, year, hour, minute, fno.fname, fno.fsize);
                 nfile++;
             }
         }
@@ -51,7 +56,7 @@ FRESULT list_dir(const char *path)
     }
     else
     {
-        printf("Failed to open \"%s\". (%u)\n", path, res);
+        printf("[%v9ERROR%vF]: Failed to open \"%s\". (%u)\n", path, res);
     }
     return res;
 }
@@ -88,47 +93,77 @@ void parse(char *str)
     }
     else if (strcmp((char *)command, "ls"))
     {
+        // if (strcmp(args[0], "-l"))
+        //     list_dir(".");
+        // else
         list_dir(".");
-        // mfsListCurDir();
     }
     else if (strcmp((char *)command, "cd"))
     {
         FRESULT res = f_chdir(args[0]);
-        // printf("%d\n", res);
         if (res)
-            printf("[%o9ERROR%oF]: Unable to change to directory %s\n", args[0]);
-        // bool bad = mfsChgDir(args[0]);
-        // if (bad)
-        //     printf("[%o9ERROR%oF]: Unable to change to directory %s\n", args[0]);
+            printf("[%v9ERROR%vF]: Unable to change to directory %s\n", args[0]);
     }
     else if (strcmp((char *)command, "run"))
     {
-        /*FILE *file = mfsOpenFile(args[0]);
-        if (file != NULL)
+        FIL *file;
+        FRESULT res = f_open(file, args[0], FA_READ);
+        if (res)
+            printf("[%v9ERROR%vF]: Unable to read file. Error: %d\n", res);
+        else
         {
-            void *prg = elf_load(file->filename, file->data);
+            uint8_t *buffer = (uint8_t *)malloc(f_size(file));
+            f_read(file, buffer, f_size(file), NULL);
+
+            void *prg = elf_load(args[0], buffer);
             if (prg != NULL)
             {
-                GlobalScheduler->makeProc("Process", (void *)prg);
+                sched_makeProc(args[0], (void *)prg, arg_i, args);
             }
             else
-                printf("[%o9ERROR%oF]: %s is not of ELF format.\n", args[0]);
-            mfsCloseFile(file);
+                printf("[%v9ERROR%vF]: File is not of ELF format.\n");
+
+            free(buffer);
+            f_close(file);
         }
-        else
-            printf("[%o9ERROR%oF]: No file found named %s\n", args[0]);*/
     }
     else if (strcmp((char *)command, "ts"))
     {
-        // GlobalScheduler->printTasks();
+        sched_printTasks();
+    }
+    else if (strcmp((char *)command, "mkdir"))
+    {
+        FRESULT res = f_mkdir(args[0]);
+        if (res)
+            printf("[%v9ERROR%vF]: Unable to make directory\n");
     }
     else if (strcmp((char *)command, "touch"))
     {
-        printf("Fname: %s\n", args[0]);
         FIL *file;
         FRESULT res = f_open(file, args[0], FA_CREATE_NEW);
-        //if (res)
-        //    printf("[%o9ERROR%oF]: Unable to make file\n", args[0]);
+        if (res)
+            printf("[%v9ERROR%vF]: Unable to make file. (%d)\n", res);
+        else
+            f_close(file);
+    }
+    else if (strcmp((char *)command, "read"))
+    {
+        FIL *file;
+        FRESULT res = f_open(file, args[0], FA_READ);
+        if (res)
+            printf("[%v9ERROR%vF]: Unable to read file. Error: %d\n", res);
+        else
+        {
+            uint8_t *buffer = (uint8_t *)malloc(f_size(file));
+            f_read(file, buffer, f_size(file), NULL);
+
+            for (int i = 0; i < f_size(file); i++)
+                printf("%c", buffer[i]);
+            printf("\n");
+
+            free(buffer);
+            f_close(file);
+        }
     }
     else if (strcmp((char *)command, "help"))
     {
@@ -145,44 +180,21 @@ void parse(char *str)
         ;
     else
     {
-        printf("[%o9ERROR%oF]: No command named \"%s\"\n", command);
+        printf("[%v9ERROR%vF]: No command named \"%s\"\n", command);
     }
-}
-
-static inline void cpuid(uint32_t reg, uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx)
-{
-    __asm__ volatile("cpuid"
-                     : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
-                     : "0"(reg));
 }
 
 extern "C" void enableSSE();
-
-void test()
-{
-    window_t *win = GlobalWM->makeWindow("Hello, world!", 640, 480);
-    while (1)
-    {
-        for (int i = 0; i < win->width * win->height; i++)
-            *(win->pixels + i) = i * PIT::TimeSinceBoot;
-        if (win->sc == 0x01)
-            break;
-    }
-    GlobalWM->deleteWindow(win);
-    sched_delSelf();
-    while (1)
-        ;
-}
+extern "C" void enableSCE();
+extern "C" void switchUser(void *, void *);
 
 FATFS FatFs;
 
 extern "C" void _start(BootInfo *bootInfo)
 {
     InitializeKernel(bootInfo);
-
     vfsMount('A');
-
-    FRESULT resDrv = f_mount(&FatFs, "", 1);
+    FRESULT resDrv = f_mount(&FatFs, "", 0);
     if (resDrv)
     {
         printf("Drive is not FAT32 formatted! Error code: %d\n", resDrv);
@@ -190,56 +202,49 @@ extern "C" void _start(BootInfo *bootInfo)
             ;
     }
 
-    // mfsInit();
     enableSSE();
-
-    // ASCII art
-    printf(" __       __                  __                                 ______    ______  \n\
-/  \\     /  |                /  |                               /      \\  /      \\ \n\
-$$  \\   /$$ |  ______    ____$$ | __    __  ________   ______  /$$$$$$  |/$$$$$$  | \n\
-$$$  \\ /$$$ | /      \\  /    $$ |/  |  /  |/        | /      \\ $$ |  $$ |$$ \\__$$/ \n\
-$$$$  /$$$$ |/$$$$$$  |/$$$$$$$ |$$ |  $$ |$$$$$$$$/  $$$$$$  |$$ |  $$ |$$      \\ \n\
-$$ $$ $$/$$ |$$    $$ |$$ |  $$ |$$ |  $$ |  /  $$/   /    $$ |$$ |  $$ | $$$$$$  |\n\
-$$ |$$$/ $$ |$$$$$$$$/ $$ \\__$$ |$$ \\__$$ | /$$$$/__ /$$$$$$$ |$$ \\__$$ |/  \\__$$ |\n\
-$$ | $/  $$ |$$       |$$    $$ |$$    $$/ /$$      |$$    $$ |$$    $$/ $$    $$/ \n\
-$$/      $$/  $$$$$$$/  $$$$$$$/  $$$$$$/  $$$$$$$$/  $$$$$$$/  $$$$$$/   $$$$$$/ \n");
-
-    GlobalRenderer->EnableSecondBuffer();
-    GlobalWM = new WindowManager();
+    enableSCE();
     sched_init();
 
     asm("sti");
 
-    /*GlobalScheduler->makeProc("Test", (void *)test);
-    FILE *file = mfsOpenFile("wintst.o");
-    if (file != NULL)
-    {
-        void *prg = (void *)elf_load(file->filename, file->data);
-        if (prg != NULL)
-        {
-            GlobalScheduler->makeProc("Test2", prg);
-            GlobalScheduler->makeProc("Test3", prg);
-        }
-    }
-    mfsCloseFile(file);*/
-
-    // FIL *file;
-    // FRESULT res = f_open(file, "hello.txt", FA_CREATE_NEW);
-
-    //FRESULT dirRes = f_mkdir("./dirTest");
-    // printf("%d\n", dirRes);
-
-    char *cwd = (char *)malloc(100);
+    debug_printf("[%+10.3f]: Run init\n", PIT::TimeSinceBoot);
 
     FIL *file;
-    FRESULT res = f_open(file, "hello.txt", FA_CREATE_NEW);
-    while (true)
+    FRESULT res = f_open(file, "init", FA_READ);
+    void *prg;
+    if (res)
+        printf("[%v9ERROR%vF]: Unable to read file. Error: %d\n", res);
+    else
+    {
+        uint8_t *buffer = (uint8_t *)malloc(f_size(file));
+        f_read(file, buffer, f_size(file), NULL);
+
+        prg = elf_load(0, buffer);
+        if (prg != NULL)
+        {
+            sched_makeProc("init", (void *)prg, 0, 0);
+        }
+        else
+            printf("[%v9ERROR%vF]: File is not of ELF format.\n");
+
+        free(buffer);
+        f_close(file);
+    }
+
+    debug_printf("[%+10.3f]: Kernel idle\n", PIT::TimeSinceBoot);
+
+    while (1);
+        
+    
+    char *cwd = (char *)malloc(100);
+    while (1)
     {
         f_getcwd(cwd, 100);
-        printf("%oClocalhost%oF@%oDadmin%oF [%s]: ", cwd);
+        printf("%vClocalhost%vF@%vAadmin%vF [%s]: ", cwd);
         char *parseStr = KeyboardGetStr();
-        //printf("%s\n", parseStr);
         parse(parseStr);
+
         // GlobalWM->draw();
         // GlobalWM->update();
     }

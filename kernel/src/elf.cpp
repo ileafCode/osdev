@@ -34,13 +34,13 @@ void *elf_load(char name[8], uint8_t *bytes)
         header->e_ident[2] != 'L' ||
         header->e_ident[3] != 'F')
     {
-        // printf("elf_load: file is not elf\n");
+        printf("elf_load: file is not elf\n");
         elf_err = ELF_BAD_HDR;
         return NULL;
     }
     if (header->e_type != ET_EXEC)
     {
-        // printf("elf_load: elf is not executable.\n");
+        printf("elf_load: elf is not executable.\n");
         elf_err = ELF_NOT_EXEC;
         return NULL;
     }
@@ -50,6 +50,7 @@ void *elf_load(char name[8], uint8_t *bytes)
     for (uint64_t i = 0; i < (uint64_t)header->e_shentsize * 8; i += header->e_shentsize)
     {
         Elf64_Shdr *shdr = (Elf64_Shdr *)((uint64_t)header + (header->e_shoff + i));
+        if (shdr->sh_addr == 0) continue;
 
         g_PageTableManager.MapMemory((void *)shdr->sh_addr, (void *)shdr->sh_addr);
 
