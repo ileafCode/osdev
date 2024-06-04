@@ -1,15 +1,11 @@
 
 # MeduzaOS (UEFI)
 ## Current features
-- [x] GDT
-- [x] IDT
-- [x] Heap
-- [x] Basic ACPI support (no rebbot or shutdown)
-- [x] PCI
-- [x] AHCI from PCI
-- [x] Actual FAT filesystem (FatFs)
-- [x] Syscalls
-- [x] Can run ELF programs
+- [x] Basic ACPI support (finding tables. that's it.)
+- [x] PCI (only AHCI driver)
+- [x] FAT filesystem (FatFs)
+- [x] Better syscalls
+- [x] ELF support (no relocatables) 
 
 ## Building
 ### Prerequisites
@@ -23,13 +19,3 @@
 ```bash
 ./run.sh
 ```
-
-That is all! If you get an "Access denied" error, run this in a terminal:
-```bash
-chmod +x ./run.sh
-```
-
-## Other
-### Pictures
-<img src="images/multitasking.png" title="Multitasking officialy working">
-<img src="images/windowtst.png" title="Basic window manager and renderer">
