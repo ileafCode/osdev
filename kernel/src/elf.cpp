@@ -46,23 +46,24 @@ void *elf_load(char name[8], uint8_t *bytes)
     }
 
     uint64_t prog_entry = header->e_entry;
+    uint64_t prog_size = 0;
     g_PageTableManager.MapMemory((void *)prog_entry, (void *)prog_entry);
     for (uint64_t i = 0; i < (uint64_t)header->e_shentsize * 8; i += header->e_shentsize)
     {
         Elf64_Shdr *shdr = (Elf64_Shdr *)((uint64_t)header + (header->e_shoff + i));
-        if (shdr->sh_addr == 0) continue;
-
-        g_PageTableManager.MapMemory((void *)shdr->sh_addr, (void *)shdr->sh_addr);
+        if (shdr->sh_addr != 0)
+            g_PageTableManager.MapMemory((void *)shdr->sh_addr, (void *)shdr->sh_addr);
 
         if (shdr->sh_type == SHT_NOBITS)
             memset((char *)(shdr->sh_addr), 0x0, shdr->sh_size);
         else if (shdr->sh_addr != 0)
             memcpy8((char *)(shdr->sh_addr), (char *)((uint64_t)header + shdr->sh_offset), shdr->sh_size);
+        prog_size += shdr->sh_size;
     }
 
-    //elf_program *out = (elf_program *)malloc(sizeof(elf_program));
-    //memcpy8(out->name, name, 8);
-    //out->name[8] = '\0';
-    //out->entryPoint = (uint64_t *)prog_entry;
-    return (void *)prog_entry;
+    void *newProgEntry = (void *)malloc(prog_size);
+    memcpy8((void *)newProgEntry, (void *)0x1000000, prog_size);
+    prog_entry -= 0x1000000;
+
+    return (void *)((uint64_t)newProgEntry + prog_entry);
 }

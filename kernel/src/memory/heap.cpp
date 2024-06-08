@@ -240,8 +240,8 @@ void *malloc(size_t size)
                 currentMemorySegment->PreviousFreeSegment->NextFreeSegment = currentMemorySegment->NextFreeSegment;
             if (currentMemorySegment->NextFreeSegment != 0)
                 currentMemorySegment->NextFreeSegment->PreviousFreeSegment = currentMemorySegment->PreviousFreeSegment;
-            //if (currentMemorySegment->PreviousSegment != 0)
-            //    currentMemorySegment->PreviousSegment->NextFreeSegment = currentMemorySegment->NextFreeSegment;
+            if (currentMemorySegment->PreviousSegment != 0)
+                currentMemorySegment->PreviousSegment->NextFreeSegment = currentMemorySegment->NextFreeSegment;
             if (currentMemorySegment->NextSegment != 0)
                 currentMemorySegment->NextSegment->PreviousFreeSegment = currentMemorySegment->PreviousFreeSegment;
             
@@ -285,12 +285,12 @@ void free(void *ptr)
 		if (currentMemorySegment->PreviousFreeSegment->NextFreeSegment > currentMemorySegment)
 			currentMemorySegment->PreviousFreeSegment->NextFreeSegment = currentMemorySegment;
 	}
-	/*if (currentMemorySegment->NextSegment != 0)
+	if (currentMemorySegment->NextSegment != 0)
 	{
 		currentMemorySegment->NextSegment->PreviousSegment = currentMemorySegment;
 		if (currentMemorySegment->NextSegment->Free)
 			CombineFreeSegments(currentMemorySegment, currentMemorySegment->NextSegment);
-	}*/
+	}
 	if (currentMemorySegment->PreviousSegment != 0)
 	{
 		currentMemorySegment->PreviousSegment->NextSegment = currentMemorySegment;

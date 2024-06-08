@@ -31,7 +31,7 @@ public:
     void FlipDB();
     void ClearDB();
     void ClearChar();
-    void Clear();
+    void Clear(bool resetPos = true);
     void Next();
     void DrawOverlayMouseCursor(uint8_t *mouseCursor, Point position, uint32_t colour);
     void ClearMouseCursor(uint8_t *mouseCursor, Point position);

@@ -8,6 +8,7 @@
 #include "../../BasicRenderer.h"
 #include "../../scheduling/task/sched.h"
 #include "../../fs/fat/ff.h"
+#include "../../scheduling/pit/pit.h"
 
 #define FOREACH_SYSCALL(SYSCALL) \
     SYSCALL(EXIT)                \
@@ -22,7 +23,10 @@
     SYSCALL(CONSOLE_READ)        \
     SYSCALL(CONSOLE_WRITE)       \
     SYSCALL(MALLOC)              \
-    SYSCALL(FREE)
+    SYSCALL(FREE)                \
+    SYSCALL(SLEEPFUNC)           \
+    SYSCALL(SHUTDOWN)            \
+    SYSCALL(REBOOT)              \
 
 #define GENERATE_STRING(STRING) #STRING,
 
@@ -39,8 +43,35 @@ struct retVal
 
 #define SPECIAL_RETADDRESS 0x2000
 
-#define STDOUT 1
-#define STDIN 2
+#define KBRD_INTRFC 0x64
+
+#define KBRD_BIT_KDATA 0
+#define KBRD_BIT_UDATA 1
+ 
+#define KBRD_IO 0x60
+#define KBRD_RESET 0xFE
+ 
+#define bit(n) (1<<(n))
+#define check_flag(flags, n) ((flags) & bit(n))
+
+void reboot()
+{
+    uint8_t temp;
+    asm volatile ("cli"); /* disable all interrupts */
+ 
+    /* Clear all keyboard buffers (output and command buffers) */
+    do
+    {
+        temp = inb(KBRD_INTRFC); /* empty user data */
+        if (check_flag(temp, KBRD_BIT_KDATA) != 0)
+            inb(KBRD_IO); /* empty keyboard data */
+    } while (check_flag(temp, KBRD_BIT_UDATA) != 0);
+ 
+    outb(KBRD_INTRFC, KBRD_RESET); /* pulse CPU reset line */
+loop:
+    asm volatile ("hlt"); /* if that didn't work, halt the CPU */
+    goto loop; /* if a NMI is received, halt again */
+}
 
 __attribute__((interrupt)) void Syscall0x80(interrupt_frame *frame)
 {
@@ -231,11 +262,27 @@ __attribute__((interrupt)) void Syscall0x80(interrupt_frame *frame)
             case 0x0A: // Newline
                 GlobalRenderer->PutChar('\n');
                 break;
+            case 0x1D:
+            {
+                GlobalRenderer->Clear(false);
+                break;
+            }
+            case 0x1E: // Set cursor position
+            {
+                GlobalRenderer->cursorPos.X = (long)r10 * GlobalRenderer->PSF1_Font->psf1_Header->charsize;
+                GlobalRenderer->cursorPos.Y = (long)r11 * 16;
+                break;
+            }
+            case 0x1F: // Change color
+            {
+                GlobalRenderer->color = r10 & 0xFFFFFFFF;
+                GlobalRenderer->bgColor = r11 & 0xFFFFFFFF;
+                break;
+            }
             }
             break;
         }
 
-        // Print mode
         GlobalRenderer->PutChar((uint8_t)r9);
         break;
     }
@@ -247,6 +294,36 @@ __attribute__((interrupt)) void Syscall0x80(interrupt_frame *frame)
     case 13: // free
     {
         free((void *)r9);
+        break;
+    }
+    case 14: // sleep
+    {
+        ret->ret1 = (uint64_t)PIT::Sleep;
+        break;
+    }
+    case 15: // shutdown
+    {
+        debug_printf("BEEP BOOP (shutdown)\n");
+        break;
+    }
+    case 16: // reboot
+    {
+        reboot();
+        break;
+    }
+    case 17: // opendir
+    {
+        ret->ret1 = (uint64_t)f_opendir((DIR *)r9, (const TCHAR *)r10);
+        break;
+    }
+    case 18: // closedir
+    {
+        ret->ret1 = (uint64_t)f_closedir((DIR *)r9);
+        break;
+    }
+    case 19: // readdir
+    {
+        ret->ret1 = (uint64_t)f_readdir((DIR *)r9, (FILINFO *)r10);
         break;
     }
     }

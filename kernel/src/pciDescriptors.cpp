@@ -542,6 +542,7 @@ namespace PCI
         case 0x01:
             return "VGA-Compatible Unclassified Device";
         }
+        return "Unknown Device";
     }
 
     const char *MSC_subclass_name(uint8_t subclass_code)
@@ -569,6 +570,7 @@ namespace PCI
         case 0x80:
             return "Other Mass Storage Controller";
         }
+        return "Unknown Device";
     }
 
     const char *NWC_subclass_name(uint8_t subclass_code)
@@ -596,6 +598,7 @@ namespace PCI
         case 0x80:
             return "Other Networking Controller";
         }
+        return "Unknown Device";
     }
 
     const char *DPC_subclass_name(uint8_t subclass_code)
@@ -611,6 +614,7 @@ namespace PCI
         case 0x80:
             return "Other Display Controller";
         }
+        return "Unknown Device";
     }
 
     const char *MuC_subclass_name(uint8_t subclass_code)
@@ -628,6 +632,7 @@ namespace PCI
         case 0x80:
             return "Other Multimedia Device";
         }
+        return "Unknown Device";
     }
 
     const char *MMC_subclass_name(uint8_t subclass_code)
@@ -641,6 +646,7 @@ namespace PCI
         case 0x80:
             return "Other Memory Controller";
         }
+        return "Unknown Device";
     }
 
     const char *BRG_subclass_name(uint8_t subclass_code)
@@ -672,6 +678,7 @@ namespace PCI
         case 0x80:
             return "Other Bridge Controller";
         }
+        return "Unknown Device";
     }
 
     const char *SCC_subclass_name(uint8_t subclass_code)
@@ -693,6 +700,7 @@ namespace PCI
         case 0x80:
             return "Other Simple COM Controller";
         }
+        return "Unknown Device";
     }
 
     const char *BSP_subclass_name(uint8_t subclass_code)
@@ -716,6 +724,7 @@ namespace PCI
         case 0x80:
             return "Other Base System Peripheral";
         }
+        return "Unknown Device";
     }
 
     const char *IDC_subclass_name(uint8_t subclass_code)
@@ -735,6 +744,7 @@ namespace PCI
         case 0x80:
             return "Other Input Device";
         }
+        return "Unknown Device";
     }
 
     const char *PRC_subclass_name(uint8_t subclass_code)
@@ -760,6 +770,7 @@ namespace PCI
         case 0x80:
             return "Other Processor / Co-Processor";
         }
+        return "Unknown Device";
     }
 
     const char *SBC_subclass_name(uint8_t subclass_code)
@@ -789,6 +800,7 @@ namespace PCI
         case 0x80:
             return "Other Serial Bus Controller";
         }
+        return "Unknown Device";
     }
 
     const char *WRC_subclass_name(uint8_t subclass_code)
@@ -812,6 +824,7 @@ namespace PCI
         case 0x80:
             return "Other Wireless Controller";
         }
+        return "Unknown Device";
     }
 
     const char *GetSubclassName(uint8_t class_code, uint8_t subclass_code)

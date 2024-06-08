@@ -29,12 +29,12 @@ static inline uint64_t mmioRead64(void *p)
 
 static uint32_t lapicIn(uint32_t reg)
 {
-    return mmioRead32((void *)lapic_ptr + reg);
+    return mmioRead32((void *)((uintptr_t)lapic_ptr + reg));
 }
 
 static void lapicOut(uint32_t reg, uint32_t data)
 {
-    mmioWrite32((void *)lapic_ptr + reg, data);
+    mmioWrite32((void *)((uintptr_t)lapic_ptr + reg), data);
 }
 
 void lapicSendInit(uint64_t apic_id)
@@ -88,8 +88,8 @@ void apicInit(uint8_t *rsdt)
         }
     }
 
-    g_PageTableManager.MapMemory((void *)ioapic_ptr, (void *)ioapic_ptr);
-    g_PageTableManager.MapMemory((void *)lapic_ptr, (void *)lapic_ptr);
+    g_PageTableManager.MapMemory((void *)((uintptr_t)ioapic_ptr), (void *)((uintptr_t)ioapic_ptr));
+    g_PageTableManager.MapMemory((void *)((uintptr_t)lapic_ptr), (void *)((uintptr_t)lapic_ptr));
     //printf("IOAPIC pointer: %x\nLAPIC pointer: %x\nNumber of cores: %d\n", ioapic_ptr, lapic_ptr, numcore);
 
     lapicOut(LAPIC_TPR, 0);

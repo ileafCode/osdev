@@ -120,10 +120,13 @@ void BasicRenderer::DrawOverlayMouseCursor(uint8_t *mouseCursor, Point position,
     MouseDrawn = true;
 }
 
-void BasicRenderer::Clear()
+void BasicRenderer::Clear(bool resetPos)
 {
-    cursorPos.X = 0;
-    cursorPos.Y = 0;
+    if (resetPos)
+    {
+        cursorPos.X = 0;
+        cursorPos.Y = 0;
+    }
 
     uint64_t fbBase = (uint64_t)TargetFramebuffer->BaseAddress;
     uint64_t bytesPerScanline = TargetFramebuffer->PixelsPerScanLine * 4;

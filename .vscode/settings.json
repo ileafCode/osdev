@@ -26,6 +26,11 @@
         "concepts": "cpp",
         "cstdio": "cpp",
         "cwchar": "cpp",
-        "new": "cpp"
+        "new": "cpp",
+        "kbd.h": "c",
+        "math.h": "c",
+        "string.h": "c",
+        "stdio.h": "c",
+        "meduza.h": "c"
     }
 }

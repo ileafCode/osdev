@@ -66,7 +66,6 @@ buildimg:
 	mkfs.vfat -F 32 $(BUILDDIR)/$(OSNAME).img
 	mmd -i $(BUILDDIR)/$(OSNAME).img ::/EFI
 	mmd -i $(BUILDDIR)/$(OSNAME).img ::/EFI/BOOT
-	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/test.txt ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BOOTEFI) ::/EFI/BOOT
 	mcopy -i $(BUILDDIR)/$(OSNAME).img startup.nsh ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/kernel.elf ::
@@ -74,7 +73,8 @@ buildimg:
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/zap-light16.psf ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/zap-vga16.psf ::
 	mcopy -i $(BUILDDIR)/$(OSNAME).img $(BUILDDIR)/utFont.psf ::
-	mcopy -i $(BUILDDIR)/$(OSNAME).img ../user_prog/bin/init ::
+
+	mcopy -i $(BUILDDIR)/$(OSNAME).img -s ../user_prog/bin ::
 
 run:
 	qemu-system-x86_64 -device sb16 -debugcon stdio -cpu host -accel kvm -soundhw pcspk -machine q35 -drive file=$(BUILDDIR)/$(OSNAME).img -m 2G -drive if=pflash,format=raw,unit=0,file="$(OVMFDIR)/OVMF_CODE-pure-efi.fd",readonly=on -drive if=pflash,format=raw,unit=1,file="$(OVMFDIR)/OVMF_VARS-pure-efi.fd" -net none

@@ -196,8 +196,6 @@ typedef struct {
 #endif
 } FFOBJID;
 
-
-
 /* File object structure (FIL) */
 
 typedef struct {

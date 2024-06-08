@@ -43,9 +43,8 @@ namespace AHCI
             return PortType::PM;
         case SATA_SIG_SEMB:
             return PortType::SEMB;
-        default:
-            PortType::None;
         }
+        return PortType::None;
     }
 
     void AHCIDriver::ProbePorts()
@@ -75,7 +74,7 @@ namespace AHCI
         void *newBase = GlobalAllocator.RequestPage();
         hbaPort->commandListBase = (uint32_t)(uint64_t)newBase;
         hbaPort->commandListBaseUpper = (uint32_t)((uint64_t)newBase >> 32);
-        memset((void *)(hbaPort->commandListBase), 0, 1024);
+        memset((void *)((uintptr_t)hbaPort->commandListBase), 0, 1024);
 
         void *fisBase = GlobalAllocator.RequestPage();
         hbaPort->fisBaseAddress = (uint32_t)(uint64_t)fisBase;
@@ -130,12 +129,12 @@ namespace AHCI
 
         hbaPort->interruptStatus = (uint32_t)-1; // Clear pending interrupt bits
 
-        HBACommandHeader *cmdHeader = (HBACommandHeader *)hbaPort->commandListBase;
+        HBACommandHeader *cmdHeader = (HBACommandHeader *)((uintptr_t)hbaPort->commandListBase);
         cmdHeader->commandFISLength = sizeof(FIS_REG_H2D) / sizeof(uint32_t); // command FIS size;
         cmdHeader->write = 0;                                                 // this is a read
         cmdHeader->prdtLength = 1;
 
-        HBACommandTable *commandTable = (HBACommandTable *)(cmdHeader->commandTableBaseAddress);
+        HBACommandTable *commandTable = (HBACommandTable *)((uintptr_t)cmdHeader->commandTableBaseAddress);
         memset(commandTable, 0, sizeof(HBACommandTable) + (cmdHeader->prdtLength - 1) * sizeof(HBAPRDTEntry));
 
         commandTable->prdtEntry[0].dataBaseAddress = (uint32_t)(uint64_t)buffer;
@@ -188,12 +187,12 @@ namespace AHCI
 
         hbaPort->interruptStatus = (uint32_t)-1; // Clear pending interrupt bits
 
-        HBACommandHeader *cmdHeader = (HBACommandHeader *)hbaPort->commandListBase;
+        HBACommandHeader *cmdHeader = (HBACommandHeader *)((uintptr_t)hbaPort->commandListBase);
         cmdHeader->commandFISLength = sizeof(FIS_REG_H2D) / sizeof(uint32_t); // command FIS size;
         cmdHeader->write = 1;                                                 // this is a write
         cmdHeader->prdtLength = 1;
 
-        HBACommandTable *commandTable = (HBACommandTable *)(cmdHeader->commandTableBaseAddress);
+        HBACommandTable *commandTable = (HBACommandTable *)((uintptr_t)cmdHeader->commandTableBaseAddress);
         memset(commandTable, 0, sizeof(HBACommandTable) + (cmdHeader->prdtLength - 1) * sizeof(HBAPRDTEntry));
 
         commandTable->prdtEntry[0].dataBaseAddress = (uint32_t)(uint64_t)buffer;
@@ -248,7 +247,7 @@ namespace AHCI
     AHCIDriver::AHCIDriver(PCI::PCIDeviceHeader *pciBaseAddress)
     {
         this->PCIBaseAddress = pciBaseAddress;
-        ABAR = (HBAMemory *)((PCI::PCIHeader0 *)pciBaseAddress)->BAR5;
+        ABAR = (HBAMemory *)((uintptr_t)((PCI::PCIHeader0 *)pciBaseAddress)->BAR5);
         g_PageTableManager.MapMemory(ABAR, ABAR);
         ProbePorts();
 

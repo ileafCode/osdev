@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/user_prog/libc"
+                "${workspaceFolder}/user_prog/libc/include"
             ],
             "defines": [],
             "cStandard": "c17",

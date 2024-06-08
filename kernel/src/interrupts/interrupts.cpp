@@ -13,8 +13,7 @@ __attribute__((interrupt)) void PageFault_Handler(interrupt_frame *frame)
         sched_delSelf();
         sched_schedule();
     }
-
-    asm("cli");
+    
     Panic("PAGE_FAULT in Kernel\n");
     debug_printf("PAGE_FAULT in Kernel\n");
     printf("at %x\n", frame->rip);
@@ -31,7 +30,6 @@ __attribute__((interrupt)) void DoubleFault_Handler(interrupt_frame *frame)
         sched_schedule();
     }
 
-    asm("cli");
     Panic("DB_FAULT in Kernel\n");
     debug_printf("DB_FAULT in Kernel\n");
     printf("at %x\n", frame->rip);
@@ -43,12 +41,11 @@ __attribute__((interrupt)) void GPFault_Handler(interrupt_frame *frame, unsigned
 {
     if (sched_getCurPID() != 0)
     {
-        debug_printf("GP_FAULT: PID %d @ 0x%x, %d\n", sched_getCurPID(), frame->rip, error);
+        debug_printf("GP_FAULT: PID %d @ %#x, %#x\n", sched_getCurPID(), frame->rip, error);
         sched_delSelf();
         sched_schedule();
     }
     
-    asm("cli");
     Panic("GP_FAULT in Kernel\n");
     debug_printf("GP_FAULT in Kernel, Error: %d\n", error);
     printf("at %x\n", frame->rip);

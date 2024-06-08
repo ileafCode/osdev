@@ -110,8 +110,8 @@ void sched_makeProc(char name[16], void *entry, int argc, char **argv)
     tasks[pids].regs.r8 = 0;
     tasks[pids].regs.eflags = tasks[0].regs.eflags;
     tasks[pids].regs.rip = (uint64_t)entry;
-    tasks[pids].origStackAddr = (uint64_t)malloc(0x1000);
-    tasks[pids].regs.rsp = tasks[pids].origStackAddr + 0x1000;
+    tasks[pids].origStackAddr = (uint64_t)malloc(MAX_STACK_SIZE);
+    tasks[pids].regs.rsp = tasks[pids].origStackAddr + MAX_STACK_SIZE;
 
     tasks[pids].pid = pids;
     tasks[pids].state = QUEUED;

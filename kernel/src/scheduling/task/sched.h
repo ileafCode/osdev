@@ -3,6 +3,8 @@
 #include "../../vector/vector.h"
 #include <stdint.h>
 
+#define MAX_STACK_SIZE 0x100000
+
 #define MAX_QUANTUM 0  // Max amount of quanta (quanta means quantum plural)
 #define MAX_PROCESS 20 // Maximum amount of processes
 
@@ -24,11 +26,12 @@ enum TaskState
 struct task
 {
     uint64_t origStackAddr;
-    registers regs; // Registers for each task
-    uint16_t pid;   // Process ID
-    char name[16];  // Process name
-    int state;      // Can be RUNNING, QUEUED or KILL
-    char *cwd;      // Process current working directory
+    registers regs;           // Registers for each task
+    uint16_t pid;             // Process ID
+    char name[16];            // Process name
+    int state;                // Can be RUNNING, QUEUED or KILL
+    char *cwd;                // Process current working directory
+    uint64_t signalPtrs[128]; // All signal pointers
     // bool locked;    // Is locked
 } __attribute__((packed));
 
